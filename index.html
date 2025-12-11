@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Orthogonal Trajectories — Family Drawer (Desmos)</title>
+  <title>Orthogonal Trajectories — Family Drawer (numeric substitution)</title>
 
   <!-- Desmos API loaded with defer -->
   <script src="https://www.desmos.com/api/v1.6/calculator.js" defer></script>
@@ -24,7 +24,7 @@
   </style>
 </head>
 <body>
-  <header>Orthogonal Trajectories — Family Drawer (Desmos)</header>
+  <header>Orthogonal Trajectories — Family Drawer (numeric substitution)</header>
 
   <div class="page">
     <div class="left">
@@ -59,9 +59,9 @@
       <h4>Notes</h4>
       <small class="note">
         • The page finds identifiers other than <code>x</code> and <code>y</code> and treats them as parameters.<br>
-        • For each parameter (e.g. <code>k</code>) the script defines <code>k = seq(i, i, pmin, pmax, pstep)</code> so Desmos draws many curves.<br>
+        • For each parameter (e.g. <code>k</code>) the script generates numeric values from <code>pmin</code> to <code>pmax</code> with <code>pstep</code> and substitutes them into the equation, creating separate plotted curves.<br>
         • If no parameter is found, the equation is plotted normally.<br>
-        • If Desmos is blocked by an extension, the page falls back to an iframe of Desmos.
+        • To avoid overloading Desmos, the total number of plotted curves is capped (200). Adjust ranges/step if you exceed that.
       </small>
     </div>
 
@@ -73,10 +73,14 @@
 
 <script>
 (function(){
-  // helper: find variable identifiers in expression
+  // find parameter identifiers in a latex string (simple heuristic)
   function findParams(expr) {
-    // match word tokens, but exclude numbers and typical functions/constants
-    const reserved = new Set(['x','y','e','pi','ln','log','sin','cos','tan','sqrt','abs','sec','csc','cot','arcsin','arccos','arctan','exp','floor','ceil','frac','mod','min','max']);
+    const reserved = new Set([
+      'x','y','e','pi','ln','log','sin','cos','tan','sqrt','abs','sec','csc','cot',
+      'arcsin','arccos','arctan','exp','floor','ceil','frac','mod','min','max',
+      'sin^{-1}','cos^{-1}','tan^{-1}'
+    ]);
+    // match letter-starting tokens
     const tokens = expr.match(/[a-zA-Z]\\w*/g) || [];
     const params = [];
     for(const t of tokens){
@@ -92,11 +96,34 @@
     iframe.src = 'https://www.desmos.com/calculator';
   }
 
+  function frange(min, max, step){
+    const arr = [];
+    if(step === 0) return arr;
+    if(step > 0){
+      for(let v = min; v <= max + 1e-12; v = Math.round((v + step) * 1e12) / 1e12) arr.push(v);
+    } else {
+      for(let v = min; v >= max - 1e-12; v = Math.round((v + step) * 1e12) / 1e12) arr.push(v);
+    }
+    return arr;
+  }
+
+  // create cartesian product of arrays
+  function cartesianProduct(arrays) {
+    return arrays.reduce((acc, arr) => {
+      const out = [];
+      for(const a of acc){
+        for(const b of arr){
+          out.push(a.concat([b]));
+        }
+      }
+      return out;
+    }, [[]]);
+  }
+
   window.addEventListener('load', function(){
     const calcDiv = document.getElementById('calculator');
     if(!calcDiv){ console.error('No calculator element'); showFallback(); return; }
 
-    // wait a little if Desmos hasn't loaded yet
     if(typeof Desmos === 'undefined'){
       setTimeout(function(){
         if(typeof Desmos === 'undefined'){
@@ -120,18 +147,14 @@
         return;
       }
 
-      // prefill with a reasonable state
       calculator.setMathBounds({left:-30, right:130, bottom:-50, top:50});
 
-      // helper to set expressions with families
       function drawFamilyFromInput(){
-        const expr = document.getElementById('equation').value.trim();
-        if(expr.length === 0){ alert('Enter an equation'); return; }
+        const raw = document.getElementById('equation').value.trim();
+        if(!raw){ alert('Enter an equation'); return; }
 
-        // find parameters
-        const params = findParams(expr);
-        // remove 'x' and 'y' if present mistakenly
-        const filteredParams = params.filter(p=> p !== 'x' && p !== 'y');
+        // detect parameters
+        const params = findParams(raw).filter(p => p !== 'x' && p !== 'y');
 
         // parameter sweep settings
         const pmin = parseFloat(document.getElementById('pmin').value) || -5;
@@ -139,22 +162,57 @@
         let pstep = parseFloat(document.getElementById('pstep').value);
         if(!isFinite(pstep) || pstep === 0) pstep = 1;
 
-        // Build expressions array for Desmos
-        const exprs = [];
-
-        // If there are parameters, define them as sequences using seq(i,i,min,max,step)
-        // For example: k = seq(i, i, -5, 5, 1)
-        for(const p of filteredParams){
-          // use the same name as parameter, Desmos accepts seq with variable i
-          const seqLatex = `${p} = seq\\left(i, i, ${pmin}, ${pmax}, ${pstep}\\right)`;
-          exprs.push({ id: `param_${p}`, latex: seqLatex });
+        // Build numeric arrays for each parameter
+        const paramValues = {};
+        for(const p of params){
+          paramValues[p] = frange(pmin, pmax, pstep);
         }
 
-        // Next: the main equation — we directly set it. If params exist, Desmos will interpret lists and draw family.
-        // Make sure to escape backslashes etc: user inputs are expected to be Desmos latex-friendly already.
-        exprs.push({ id: 'familyEq', latex: expr, color: Desmos.Colors.BLUE });
+        // Compute total count and cap
+        let combos = [[]];
+        let paramNames = [];
+        if(params.length > 0){
+          paramNames = params.slice();
+          const arrays = params.map(p => paramValues[p]);
+          combos = cartesianProduct(arrays);
+        }
 
-        // Clear previous expressions then set new ones
+        const totalCurves = combos.length;
+        const MAX_CURVES = 200;
+        if(totalCurves > MAX_CURVES){
+          alert('Too many curves (' + totalCurves + '). Increase step or reduce range to draw up to ' + MAX_CURVES + ' curves.');
+          return;
+        }
+
+        // Build expression list
+        const exprs = [];
+        // optional: add a base equation for reference (commented out)
+        // exprs.push({id:'base', latex:raw, visible:false});
+
+        if(params.length === 0){
+          // no parameters -> just add the equation as-is
+          exprs.push({ id: 'eq0', latex: raw, color: Desmos.Colors.BLUE });
+        } else {
+          // for each combination of parameter values, substitute into the latex and add expression
+          for(let i=0;i<combos.length;i++){
+            const combo = combos[i]; // array of numeric values aligned with paramNames
+            let substituted = raw;
+            for(let j=0;j<paramNames.length;j++){
+              const pname = paramNames[j];
+              const pvalue = combo[j];
+              // Replace occurrences of pname in the latex with a numeric literal (wrap in parentheses)
+              // Use regex with word boundary to avoid partial matches
+              const re = new RegExp('\\\\b' + pname + '\\\\b', 'g');
+              // But JS RegExp doesn't support \b with non-word characters robustly in LaTeX; instead replace all exact names using a safer method
+              substituted = substituted.replace(new RegExp('(?<![\\\\\\w])' + pname + '(?![\\w])','g'), '(' + String(pvalue) + ')');
+            }
+            // create id and color cycling
+            const color = (i % 2 === 0) ? Desmos.Colors.BLUE : Desmos.Colors.PURPLE;
+            exprs.push({ id: 'eq_' + i, latex: substituted, color: color });
+          }
+        }
+
+        // Clear previous expressions and set new ones
         try {
           calculator.setExpressions([]); // clear
           calculator.setExpressions(exprs);
@@ -164,7 +222,7 @@
         }
       }
 
-      // wire up UI
+      // wires
       document.getElementById('draw').addEventListener('click', drawFamilyFromInput);
 
       document.getElementById('set-circle').addEventListener('click', function(){
@@ -185,10 +243,8 @@
 
       // initial draw
       drawFamilyFromInput();
-
     } // end initDesmos
-  });
-
+  }); // end window load
 })();
 </script>
 </body>
