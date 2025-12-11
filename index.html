@@ -1,0 +1,281 @@
+<!--
+Orthogonal Trajectories — JavaScript version
+Place this file as `index.html` in the root of your GitHub Pages repo (e.g., `LAUC-project`)
+This will run on GitHub Pages (static) and produces interactive plots.
+
+Features:
+- Choose a family: Concentric circles, Parabolas (y = C x^2), Exponential family (y = C e^x)
+- Adjust ranges and number of curves
+- Plots family curves and orthogonal trajectories computed analytically
+- Uses Plotly.js for interactive plotting (CDN)
+
+To use:
+1. Replace your current GitHub Pages index.html with this file (or add it to the repo root)
+2. Commit & push to GitHub
+3. Visit your GitHub Pages URL: https://optimus-prime559.github.io/LAUC-project/
+
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orthogonal Trajectories — LAUC Project</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin: 0; padding: 0; background:#f7fafc; color:#0f172a }
+    header { padding: 18px; background: linear-gradient(90deg,#0ea5a4,#3b82f6); color:white }
+    header h1 { margin:0; font-size:20px }
+    .container { display:flex; gap:20px; padding:18px }
+    .controls { width:320px; background:white; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.08) }
+    .plot { flex:1; background:white; padding:12px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06) }
+    label { display:block; margin:10px 0 6px; font-weight:600 }
+    select,input[type=range],input[type=number] { width:100%; }
+    .row { display:flex; gap:8px }
+    .muted { color:#475569; font-weight:400 }
+    footer { padding:12px; text-align:center; color:#475569 }
+    .btn { display:inline-block; padding:8px 12px; background:#3b82f6; color:white; border-radius:6px; border:none; cursor:pointer }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Orthogonal Trajectories — Interactive (GitHub Pages)</h1>
+  </header>
+
+  <div class="container">
+    <div class="controls">
+      <label for="family">Family</label>
+      <select id="family">
+        <option value="circles">Concentric circles (x² + y² = C²)</option>
+        <option value="parabolas">Parabolas (y = C x²)</option>
+        <option value="exponential">Exponential (y = C eˣ)</option>
+      </select>
+
+      <label for="ncurves">Number of family curves</label>
+      <input id="ncurves" type="range" min="3" max="20" value="7" />
+      <div class="muted"> <span id="ncurves-val">7</span> curves</div>
+
+      <label for="xrange">X range</label>
+      <div class="row">
+        <input id="xmin" type="number" value="-5" step="0.5" />
+        <input id="xmax" type="number" value="5" step="0.5" />
+      </div>
+
+      <label for="yrange">Y range</label>
+      <div class="row">
+        <input id="ymin" type="number" value="-5" step="0.5" />
+        <input id="ymax" type="number" value="5" step="0.5" />
+      </div>
+
+      <label for="samples">Samples along x (plot resolution)</label>
+      <input id="samples" type="range" min="100" max="2000" value="600" />
+      <div class="muted"> <span id="samples-val">600</span> samples</div>
+
+      <label for="orth-count">Number of orthogonal trajectories to draw</label>
+      <input id="orth-count" type="range" min="3" max="15" value="7" />
+      <div class="muted"> <span id="orth-count-val">7</span> orthogonals</div>
+
+      <div style="margin-top:12px; display:flex; gap:8px">
+        <button class="btn" id="redraw">Redraw</button>
+        <button class="btn" id="savepng">Download PNG</button>
+      </div>
+
+      <hr />
+      <div class="muted" style="font-size:13px">Notes:</div>
+      <ul style="font-size:13px; margin-top:8px">
+        <li>This is a static (client-side) JavaScript implementation that runs on GitHub Pages.</li>
+        <li>Orthogonal trajectories are computed analytically for the three families.</li>
+      </ul>
+    </div>
+
+    <div class="plot">
+      <div id="plotly" style="width:100%; height:720px"></div>
+    </div>
+  </div>
+
+  <footer>
+    Built for LAUC-project — converts Python visuals to a browser-friendly interactive demo.
+  </footer>
+
+<script>
+// ---- Utilities and math for families and orthogonal trajectories ----
+function linspace(a,b,n){
+  const arr = []; if(n<=1){arr.push(a); return arr}
+  const step=(b-a)/(n-1);
+  for(let i=0;i<n;i++) arr.push(a + step*i);
+  return arr;
+}
+
+// Family curve samplers: given family parameters produce y(x) arrays
+function sample_family(family, Cvals, xs){
+  const curves = [];
+  if(family === 'circles'){
+    // implicit x^2 + y^2 = C^2 -> y = +-sqrt(C^2 - x^2)
+    for(const C of Cvals){
+      const yPos = []; const yNeg = [];
+      for(const x of xs){
+        const inside = C*C - x*x;
+        if(inside >= 0){ yPos.push(Math.sqrt(inside)); yNeg.push(-Math.sqrt(inside)); }
+        else { yPos.push(null); yNeg.push(null); }
+      }
+      curves.push({x: xs, y: yPos});
+      curves.push({x: xs, y: yNeg});
+    }
+  } else if(family === 'parabolas'){
+    // y = C x^2
+    for(const C of Cvals){
+      const y = xs.map(x=> C * x * x);
+      curves.push({x: xs, y: y});
+    }
+  } else if(family === 'exponential'){
+    // y = C * e^x
+    for(const C of Cvals){
+      const y = xs.map(x=> C * Math.exp(x));
+      curves.push({x: xs, y: y});
+    }
+  }
+  return curves;
+}
+
+// Orthogonal trajectories: derive implicit relations and sample level sets
+// For each family we know a conserved quantity K describing the orth family:
+// circles: orthogonals are radial lines y = m x  -> param by angle t: y = tan(t) x
+// parabolas: orth implicit: y^2 + x^2/2 = K
+// exponential: orth implicit: y^2 + 2x = K
+
+function sample_orthogonals(family, Ks, xs, ylim){
+  const curves = [];
+  if(family === 'circles'){
+    // For circles, orthogonals are lines through origin: y = m x, param m = tan(theta)
+    for(const m of Ks){
+      const ys = xs.map(x=> m * x);
+      curves.push({x: xs, y: ys});
+    }
+  } else if(family === 'parabolas'){
+    // y^2 + x^2/2 = K  => y = +- sqrt(K - x^2/2)
+    for(const K of Ks){
+      const yPos = []; const yNeg = [];
+      for(const x of xs){
+        const inside = K - 0.5 * x * x;
+        if(inside >= 0){ yPos.push(Math.sqrt(inside)); yNeg.push(-Math.sqrt(inside)); }
+        else { yPos.push(null); yNeg.push(null); }
+      }
+      curves.push({x: xs, y: yPos});
+      curves.push({x: xs, y: yNeg});
+    }
+  } else if(family === 'exponential'){
+    // y^2 + 2x = K  => y = +- sqrt(K - 2x)
+    for(const K of Ks){
+      const yPos=[]; const yNeg=[];
+      for(const x of xs){
+        const inside = K - 2 * x;
+        if(inside >= 0){ yPos.push(Math.sqrt(inside)); yNeg.push(-Math.sqrt(inside)); }
+        else { yPos.push(null); yNeg.push(null); }
+      }
+      curves.push({x: xs, y: yPos});
+      curves.push({x: xs, y: yNeg});
+    }
+  }
+  return curves;
+}
+
+// Helpers to create parameter lists
+function makeCvals_for_family(family,n, xlim){
+  const Cvals = [];
+  if(family === 'circles'){
+    // radii spaced
+    const maxR = Math.max(Math.abs(xlim[0]), Math.abs(xlim[1])) * 0.9 + 0.5;
+    for(let i=1;i<=n;i++){ Cvals.push(i * maxR / n); }
+  } else if(family === 'parabolas'){
+    // choose C to spread curves vertically
+    for(let i=0;i<n;i++){ Cvals.push((i - Math.floor(n/2)) * 0.5 + 0.5); }
+  } else if(family === 'exponential'){
+    for(let i=0;i<n;i++){ Cvals.push(0.2 + i * 0.6); }
+  }
+  return Cvals;
+}
+
+function makeKs_for_orth(family, n, xlim, ylim){
+  const Ks = [];
+  if(family === 'circles'){
+    // for lines we param by slope m, choose angles
+    for(let i=0;i<n;i++){ const theta = i * Math.PI / n; Ks.push(Math.tan(theta + 0.001)); }
+  } else if(family === 'parabolas'){
+    // sample K values based on visible region
+    const xmin = xlim[0], xmax = xlim[1];
+    const rangeX2 = Math.max( (0.5*xmin*xmin), (0.5*xmax*xmax) );
+    for(let i=0;i<n;i++){ Ks.push(rangeX2 + (i+1) * (Math.max(Math.abs(ylim[0]), Math.abs(ylim[1])) + 1) / n); }
+  } else if(family === 'exponential'){
+    // K = y^2 + 2x, sample K using xlim and ylim
+    const base = 2 * xlim[0];
+    for(let i=0;i<n;i++){ Ks.push(base + (i+1) * (Math.max(Math.abs(ylim[0]), Math.abs(ylim[1])) + 1) / n); }
+  }
+  return Ks;
+}
+
+// ---- Plotting with Plotly ----
+function redrawPlot(){
+  const family = document.getElementById('family').value;
+  const ncur = parseInt(document.getElementById('ncurves').value);
+  const xmin = parseFloat(document.getElementById('xmin').value);
+  const xmax = parseFloat(document.getElementById('xmax').value);
+  const ymin = parseFloat(document.getElementById('ymin').value);
+  const ymax = parseFloat(document.getElementById('ymax').value);
+  const samples = parseInt(document.getElementById('samples').value);
+  const orthCount = parseInt(document.getElementById('orth-count').value);
+
+  document.getElementById('ncurves-val').innerText = ncur;
+  document.getElementById('samples-val').innerText = samples;
+  document.getElementById('orth-count-val').innerText = orthCount;
+
+  const xs = linspace(xmin, xmax, samples);
+  const Cvals = makeCvals_for_family(family, ncur, [xmin, xmax]);
+  const familyCurves = sample_family(family, Cvals, xs);
+  const Ks = makeKs_for_orth(family, orthCount, [xmin, xmax], [ymin, ymax]);
+  const orthCurves = sample_orthogonals(family, Ks, xs, [ymin, ymax]);
+
+  const traces = [];
+  // family traces
+  for(const c of familyCurves){
+    traces.push({ x: c.x, y: c.y, mode:'lines', line:{width:1.5}, hoverinfo:'none' });
+  }
+  // orth traces (dashed, thicker)
+  for(const o of orthCurves){
+    traces.push({ x: o.x, y: o.y, mode:'lines', line:{width:2,dash:'dashdot'}, hoverinfo:'none' });
+  }
+
+  const layout = {
+    xaxis:{range:[xmin, xmax], zeroline:true, title:'x'},
+    yaxis:{range:[ymin, ymax], zeroline:true, title:'y'},
+    showlegend:false,
+    margin:{l:50,r:20,t:20,b:50},
+    plot_bgcolor:'#ffffff',
+    paper_bgcolor:'#ffffff',
+    height:720
+  };
+
+  Plotly.newPlot('plotly', traces, layout, {displayModeBar:true});
+}
+
+// ---- wire UI ----
+document.getElementById('redraw').onclick = redrawPlot;
+document.getElementById('family').onchange = redrawPlot;
+const sliders = ['ncurves','samples','orth-count','xmin','xmax','ymin','ymax'];
+for(const id of sliders){ document.getElementById(id).oninput = redrawPlot; }
+
+// additional live labels
+document.getElementById('ncurves').oninput = ()=> { document.getElementById('ncurves-val').innerText = document.getElementById('ncurves').value; };
+document.getElementById('samples').oninput = ()=> { document.getElementById('samples-val').innerText = document.getElementById('samples').value; };
+document.getElementById('orth-count').oninput = ()=> { document.getElementById('orth-count-val').innerText = document.getElementById('orth-count').value; };
+
+// download PNG
+document.getElementById('savepng').onclick = ()=>{ Plotly.toImage('plotly', {format:'png',height:720, width:1000}).then(function(url){
+    const a = document.createElement('a'); a.href = url; a.download = 'orthogonal_trajectories.png'; document.body.appendChild(a); a.click(); a.remove();
+  }); };
+
+// initial draw
+redrawPlot();
+</script>
+</body>
+</html>
