@@ -1,19 +1,22 @@
 <!--
-Orthogonal Trajectories — JavaScript version
-Place this file as `index.html` in the root of your GitHub Pages repo (e.g., `LAUC-project`)
-This will run on GitHub Pages (static) and produces interactive plots.
+Orthogonal Trajectories — JavaScript version (custom curve input)
+Place this file as `index.html` in the root of your GitHub Pages repo (e.g., `LAUC-project`).
 
-Features:
-- Choose a family: Concentric circles, Parabolas (y = C x^2), Exponential family (y = C e^x)
-- Adjust ranges and number of curves
-- Plots family curves and orthogonal trajectories computed analytically
-- Uses Plotly.js for interactive plotting (CDN)
+This updated version allows the user to enter a custom explicit family y = f(x, C)
+as a JavaScript expression using variables `x` and `C` (for example: `C*Math.exp(x)` or `C*x*x`).
+It also keeps built-in presets (circles/parabolas/exponential).
 
-To use:
-1. Replace your current GitHub Pages index.html with this file (or add it to the repo root)
-2. Commit & push to GitHub
-3. Visit your GitHub Pages URL: https://optimus-prime559.github.io/LAUC-project/
+How to write a custom expression:
+- Use `x` and `C` (both numeric).
+- Use Math functions (Math.exp, Math.sqrt, Math.sin, etc.).
+- Example: `C*Math.exp(x)`, `C*Math.sin(x)`, `C*x*x`.
 
+Notes on orthogonal trajectories for a custom family:
+- The script numerically finds C from the equation y = f(x, C) for a given (x,y) using a simple root-finder inside a user-provided C range.
+- It computes partial derivative df/dx numerically (central difference) and then uses dy/dx_orth = -1 / (df/dx).
+- Orthogonal trajectories are then integrated numerically (RK4) across the x-range from several seed points.
+
+This runs fully in the browser and works on GitHub Pages.
 -->
 
 <!doctype html>
@@ -21,39 +24,52 @@ To use:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Orthogonal Trajectories — LAUC Project</title>
+  <title>Orthogonal Trajectories — Custom (GitHub Pages)</title>
   <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
   <style>
     body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin: 0; padding: 0; background:#f7fafc; color:#0f172a }
     header { padding: 18px; background: linear-gradient(90deg,#0ea5a4,#3b82f6); color:white }
     header h1 { margin:0; font-size:20px }
     .container { display:flex; gap:20px; padding:18px }
-    .controls { width:320px; background:white; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.08) }
+    .controls { width:360px; background:white; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.08) }
     .plot { flex:1; background:white; padding:12px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06) }
     label { display:block; margin:10px 0 6px; font-weight:600 }
-    select,input[type=range],input[type=number] { width:100%; }
+    select,input[type=range],input[type=number], textarea { width:100%; }
+    textarea { min-height:64px; font-family:monospace }
     .row { display:flex; gap:8px }
     .muted { color:#475569; font-weight:400 }
     footer { padding:12px; text-align:center; color:#475569 }
     .btn { display:inline-block; padding:8px 12px; background:#3b82f6; color:white; border-radius:6px; border:none; cursor:pointer }
+    small.note { display:block; color:#64748b; margin-top:6px }
   </style>
 </head>
 <body>
   <header>
-    <h1>Orthogonal Trajectories — Interactive (GitHub Pages)</h1>
+    <h1>Orthogonal Trajectories — Custom input</h1>
   </header>
 
   <div class="container">
     <div class="controls">
-      <label for="family">Family</label>
-      <select id="family">
-        <option value="circles">Concentric circles (x² + y² = C²)</option>
+      <label for="preset">Preset / Mode</label>
+      <select id="preset">
+        <option value="custom">Custom: y = f(x, C)</option>
+        <option value="circles">Concentric circles (implicit)</option>
         <option value="parabolas">Parabolas (y = C x²)</option>
         <option value="exponential">Exponential (y = C eˣ)</option>
       </select>
 
+      <label for="expr">Custom expression (use `x` and `C`) </label>
+      <textarea id="expr">C*Math.exp(x)</textarea>
+      <small class="note">Examples: <code>C*Math.exp(x)</code>, <code>C*x*x</code>, <code>C*Math.sin(x)</code></small>
+
+      <label for="cmin">C range (min, max)</label>
+      <div class="row">
+        <input id="cmin" type="number" value="0.2" step="0.1" />
+        <input id="cmax" type="number" value="3" step="0.1" />
+      </div>
+
       <label for="ncurves">Number of family curves</label>
-      <input id="ncurves" type="range" min="3" max="20" value="7" />
+      <input id="ncurves" type="range" min="1" max="20" value="7" />
       <div class="muted"> <span id="ncurves-val">7</span> curves</div>
 
       <label for="xrange">X range</label>
@@ -69,11 +85,11 @@ To use:
       </div>
 
       <label for="samples">Samples along x (plot resolution)</label>
-      <input id="samples" type="range" min="100" max="2000" value="600" />
+      <input id="samples" type="range" min="200" max="2000" value="600" />
       <div class="muted"> <span id="samples-val">600</span> samples</div>
 
       <label for="orth-count">Number of orthogonal trajectories to draw</label>
-      <input id="orth-count" type="range" min="3" max="15" value="7" />
+      <input id="orth-count" type="range" min="1" max="15" value="7" />
       <div class="muted"> <span id="orth-count-val">7</span> orthogonals</div>
 
       <div style="margin-top:12px; display:flex; gap:8px">
@@ -82,10 +98,10 @@ To use:
       </div>
 
       <hr />
-      <div class="muted" style="font-size:13px">Notes:</div>
+      <div class="muted" style="font-size:13px">About custom input</div>
       <ul style="font-size:13px; margin-top:8px">
-        <li>This is a static (client-side) JavaScript implementation that runs on GitHub Pages.</li>
-        <li>Orthogonal trajectories are computed analytically for the three families.</li>
+        <li>The custom mode expects an explicit expression y = f(x, C). The app will try to invert numerically for C when tracing orthogonals.</li>
+        <li>If inversion fails for some (x,y), that orthogonal path may stop early.</li>
       </ul>
     </div>
 
@@ -95,128 +111,114 @@ To use:
   </div>
 
   <footer>
-    Built for LAUC-project — converts Python visuals to a browser-friendly interactive demo.
+    Built for LAUC-project — interactive orthogonal trajectories with custom expressions.
   </footer>
 
 <script>
-// ---- Utilities and math for families and orthogonal trajectories ----
-function linspace(a,b,n){
-  const arr = []; if(n<=1){arr.push(a); return arr}
-  const step=(b-a)/(n-1);
-  for(let i=0;i<n;i++) arr.push(a + step*i);
-  return arr;
-}
+// Utilities
+function linspace(a,b,n){ const arr=[]; if(n<=1){arr.push(a); return arr} const step=(b-a)/(n-1); for(let i=0;i<n;i++) arr.push(a+step*i); return arr; }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
 
-// Family curve samplers: given family parameters produce y(x) arrays
-function sample_family(family, Cvals, xs){
-  const curves = [];
-  if(family === 'circles'){
-    // implicit x^2 + y^2 = C^2 -> y = +-sqrt(C^2 - x^2)
-    for(const C of Cvals){
-      const yPos = []; const yNeg = [];
-      for(const x of xs){
-        const inside = C*C - x*x;
-        if(inside >= 0){ yPos.push(Math.sqrt(inside)); yNeg.push(-Math.sqrt(inside)); }
-        else { yPos.push(null); yNeg.push(null); }
-      }
-      curves.push({x: xs, y: yPos});
-      curves.push({x: xs, y: yNeg});
-    }
-  } else if(family === 'parabolas'){
-    // y = C x^2
-    for(const C of Cvals){
-      const y = xs.map(x=> C * x * x);
-      curves.push({x: xs, y: y});
-    }
-  } else if(family === 'exponential'){
-    // y = C * e^x
-    for(const C of Cvals){
-      const y = xs.map(x=> C * Math.exp(x));
-      curves.push({x: xs, y: y});
-    }
+// Numeric derivative df/dx (central difference)
+function dfdx_numeric(f, x, C){ const h=1e-5; return (f(x+h,C) - f(x-h,C)) / (2*h); }
+
+// Solve for C given equation f(x,C) - y = 0 using simple Newton with fallback to bisection
+function solve_for_C(f, x, y, cmin, cmax){
+  // try Newton with multiple starting points
+  const maxIter=25; const tol=1e-6;
+  let guess = (cmin + cmax)/2;
+  for(let i=0;i<maxIter;i++){
+    const F = f(x,guess) - y;
+    // numeric derivative w.r.t C
+    const h=1e-6; const dFdC = (f(x,guess+h) - f(x,guess-h)) / (2*h);
+    if(Math.abs(dFdC) < 1e-12) break;
+    const step = F / dFdC;
+    guess = guess - step;
+    if(guess < cmin || guess > cmax) break;
+    if(Math.abs(F) < tol) return guess;
   }
-  return curves;
-}
-
-// Orthogonal trajectories: derive implicit relations and sample level sets
-// For each family we know a conserved quantity K describing the orth family:
-// circles: orthogonals are radial lines y = m x  -> param by angle t: y = tan(t) x
-// parabolas: orth implicit: y^2 + x^2/2 = K
-// exponential: orth implicit: y^2 + 2x = K
-
-function sample_orthogonals(family, Ks, xs, ylim){
-  const curves = [];
-  if(family === 'circles'){
-    // For circles, orthogonals are lines through origin: y = m x, param m = tan(theta)
-    for(const m of Ks){
-      const ys = xs.map(x=> m * x);
-      curves.push({x: xs, y: ys});
-    }
-  } else if(family === 'parabolas'){
-    // y^2 + x^2/2 = K  => y = +- sqrt(K - x^2/2)
-    for(const K of Ks){
-      const yPos = []; const yNeg = [];
-      for(const x of xs){
-        const inside = K - 0.5 * x * x;
-        if(inside >= 0){ yPos.push(Math.sqrt(inside)); yNeg.push(-Math.sqrt(inside)); }
-        else { yPos.push(null); yNeg.push(null); }
-      }
-      curves.push({x: xs, y: yPos});
-      curves.push({x: xs, y: yNeg});
-    }
-  } else if(family === 'exponential'){
-    // y^2 + 2x = K  => y = +- sqrt(K - 2x)
-    for(const K of Ks){
-      const yPos=[]; const yNeg=[];
-      for(const x of xs){
-        const inside = K - 2 * x;
-        if(inside >= 0){ yPos.push(Math.sqrt(inside)); yNeg.push(-Math.sqrt(inside)); }
-        else { yPos.push(null); yNeg.push(null); }
-      }
-      curves.push({x: xs, y: yPos});
-      curves.push({x: xs, y: yNeg});
-    }
+  // bisection fallback: require sign change
+  let a=cmin, b=cmax; let fa=f(x,a)-y, fb=f(x,b)-y;
+  if(Math.abs(fa) < tol) return a; if(Math.abs(fb) < tol) return b;
+  if(fa * fb > 0) return null; // no sign change -> can't bisection
+  for(let i=0;i<60;i++){
+    const m=(a+b)/2; const fm = f(x,m)-y;
+    if(Math.abs(fm) < tol) return m;
+    if(fa * fm <= 0){ b = m; fb = fm; } else { a = m; fa = fm; }
   }
-  return curves;
+  return (a+b)/2;
 }
 
-// Helpers to create parameter lists
-function makeCvals_for_family(family,n, xlim){
-  const Cvals = [];
-  if(family === 'circles'){
-    // radii spaced
-    const maxR = Math.max(Math.abs(xlim[0]), Math.abs(xlim[1])) * 0.9 + 0.5;
-    for(let i=1;i<=n;i++){ Cvals.push(i * maxR / n); }
-  } else if(family === 'parabolas'){
-    // choose C to spread curves vertically
-    for(let i=0;i<n;i++){ Cvals.push((i - Math.floor(n/2)) * 0.5 + 0.5); }
-  } else if(family === 'exponential'){
-    for(let i=0;i<n;i++){ Cvals.push(0.2 + i * 0.6); }
+// RK4 integrator for dy/dx = g(x,y)
+function integrate_orth(g, x0, y0, x_min, x_max, h){
+  const pts = [];
+  let x = x0, y = y0;
+  const nForward = Math.ceil((x_max - x0)/h);
+  // forward integrate
+  for(let i=0;i<nForward;i++){
+    if(!isFinite(y)) break;
+    pts.push({x:x,y:y});
+    const k1 = g(x, y);
+    const k2 = g(x + h/2, y + h*k1/2);
+    const k3 = g(x + h/2, y + h*k2/2);
+    const k4 = g(x + h, y + h*k3);
+    const dy = (h/6)*(k1 + 2*k2 + 2*k3 + k4);
+    x += h; y += dy;
+    if(x > x_max) break;
   }
-  return Cvals;
+  return pts;
 }
 
-function makeKs_for_orth(family, n, xlim, ylim){
-  const Ks = [];
-  if(family === 'circles'){
-    // for lines we param by slope m, choose angles
-    for(let i=0;i<n;i++){ const theta = i * Math.PI / n; Ks.push(Math.tan(theta + 0.001)); }
-  } else if(family === 'parabolas'){
-    // sample K values based on visible region
-    const xmin = xlim[0], xmax = xlim[1];
-    const rangeX2 = Math.max( (0.5*xmin*xmin), (0.5*xmax*xmax) );
-    for(let i=0;i<n;i++){ Ks.push(rangeX2 + (i+1) * (Math.max(Math.abs(ylim[0]), Math.abs(ylim[1])) + 1) / n); }
-  } else if(family === 'exponential'){
-    // K = y^2 + 2x, sample K using xlim and ylim
-    const base = 2 * xlim[0];
-    for(let i=0;i<n;i++){ Ks.push(base + (i+1) * (Math.max(Math.abs(ylim[0]), Math.abs(ylim[1])) + 1) / n); }
+// Sample family explicit y = f(x,C)
+function sample_family_explicit(f, Cvals, xs){ const curves = []; for(const C of Cvals){ const y = xs.map(x=>{ try{ const v=f(x,C); return (isFinite(v)?v:null); } catch(e){ return null; } }); curves.push({x:xs, y:y}); } return curves; }
+
+// Sample family implicit circles special-case
+function sample_family_circles(Cvals, xs){ const curves=[]; for(const C of Cvals){ const yPos=[], yNeg=[]; for(const x of xs){ const inside = C*C - x*x; if(inside>=0){ yPos.push(Math.sqrt(inside)); yNeg.push(-Math.sqrt(inside)); } else { yPos.push(null); yNeg.push(null);} } curves.push({x:xs,y:yPos}); curves.push({x:xs,y:yNeg}); } return curves; }
+
+// Build orthogonal trajectories numerically for custom explicit family
+function build_orthogonals_custom(f, cmin, cmax, xs, orthCount, xlim, ylim){
+  // seed points: take several C values and for each take a set of x positions to seed
+  const seeds = [];
+  const CvalsForSeeds = [];
+  for(let i=0;i<orthCount;i++){ CvalsForSeeds.push(cmin + (i+0.5)*(cmax-cmin)/orthCount); }
+  const xSeeds = [ (xlim[0]+xlim[1])/2 ];
+  // also include points along left and right
+  xSeeds.push(xlim[0] + (xlim[1]-xlim[0])*0.25);
+  xSeeds.push(xlim[0] + (xlim[1]-xlim[0])*0.75);
+
+  for(const C0 of CvalsForSeeds){ for(const xs0 of xSeeds){ const y0 = f(xs0, C0); if(isFinite(y0)) seeds.push({x:xs0,y:y0}); } }
+
+  const orthCurves = [];
+  const h = (xlim[1]-xlim[0]) / Math.max(200, xs.length);
+  // define g(x,y) that computes orth slope: -1 / (df/dx at (x, C_sol)) where C_sol solves f(x,C)=y
+  const g = function(x,y){ const Csol = solve_for_C(f, x, y, cmin, cmax); if(Csol===null) return NaN; const dfdx = dfdx_numeric(f, x, Csol); if(Math.abs(dfdx) < 1e-8) return NaN; return -1.0 / dfdx; };
+
+  for(const s of seeds){
+    // forward integrate from seed to right
+    const ptsF = integrate_orth(g, s.x, s.y, s.x, xlim[1], Math.abs(h));
+    // backward integrate (negative h) from seed to left
+    const ptsB = (function(){ const pts=[]; let x=s.x, y=s.y; for(let i=0;i<Math.ceil((s.x - xlim[0])/Math.abs(h)); i++){ const k1 = g(x, y); const k2 = g(x - h/2, y - (-h)*k1/2); const k3 = g(x - h/2, y - (-h)*k2/2); const k4 = g(x - h, y - (-h)*k3); const dy = (-h/6)*(k1 + 2*k2 + 2*k3 + k4); x += -h; y += dy; if(!isFinite(y)) break; pts.push({x:x,y:y}); } return pts.reverse(); })();
+    const all = ptsB.concat(ptsF);
+    // filter points outside ylim
+    const xsout = all.map(p=>p.x), ysout = all.map(p=>p.y);
+    orthCurves.push({x: xsout, y: ysout});
   }
-  return Ks;
+  return orthCurves;
 }
 
-// ---- Plotting with Plotly ----
+// Sample orth for analytic known families
+function sample_orth_analytic(family, Ks, xs){ const curves=[]; if(family==='circles'){ for(const m of Ks){ curves.push({x:xs, y: xs.map(x=>m*x)}); } } else if(family==='parabolas'){ for(const K of Ks){ const yPos=[], yNeg=[]; for(const x of xs){ const inside = K - 0.5*x*x; if(inside>=0){ yPos.push(Math.sqrt(inside)); yNeg.push(-Math.sqrt(inside)); } else { yPos.push(null); yNeg.push(null);} } curves.push({x:xs,y:yPos}); curves.push({x:xs,y:yNeg}); } else if(family==='exponential'){ for(const K of Ks){ const yPos=[], yNeg=[]; for(const x of xs){ const inside = K - 2*x; if(inside>=0){ yPos.push(Math.sqrt(inside)); yNeg.push(-Math.sqrt(inside)); } else { yPos.push(null); yNeg.push(null);} } curves.push({x:xs,y:yPos}); curves.push({x:xs,y:yNeg}); } return curves; }
+
+// Helper functions to choose parameter lists
+function makeCvals_for_family(family,n,xlim,cmin,cmax){ const Cvals=[]; if(family==='circles'){ const maxR=Math.max(Math.abs(xlim[0]),Math.abs(xlim[1]))*0.9 + 0.5; for(let i=1;i<=n;i++) Cvals.push(i*maxR/n); } else if(family==='parabolas'){ for(let i=0;i<n;i++) Cvals.push((i - Math.floor(n/2)) * 0.5 + 0.5); } else if(family==='exponential'){ for(let i=0;i<n;i++) Cvals.push(cmin + i*(cmax-cmin)/Math.max(1,n-1)); } else { for(let i=0;i<n;i++) Cvals.push(cmin + i*(cmax-cmin)/Math.max(1,n-1)); } return Cvals; }
+function makeKs_for_orth(family,n,xlim,ylim){ const Ks=[]; if(family==='circles'){ for(let i=0;i<n;i++){ const theta = i * Math.PI / n; Ks.push(Math.tan(theta + 0.001)); } } else if(family==='parabolas'){ const xmin=xlim[0], xmax=xlim[1]; const rangeX2 = Math.max(0.5*xmin*xmin,0.5*xmax*xmax); for(let i=0;i<n;i++) Ks.push(rangeX2 + (i+1)*(Math.max(Math.abs(ylim[0]),Math.abs(ylim[1])) + 1)/n); } else if(family==='exponential'){ const base = 2*xlim[0]; for(let i=0;i<n;i++) Ks.push(base + (i+1)*(Math.max(Math.abs(ylim[0]),Math.abs(ylim[1])) + 1)/n); } else { for(let i=0;i<n;i++) Ks.push(i+1); } return Ks; }
+
+// Main redraw
 function redrawPlot(){
-  const family = document.getElementById('family').value;
+  const preset = document.getElementById('preset').value;
+  const expr = document.getElementById('expr').value;
+  const cmin = parseFloat(document.getElementById('cmin').value);
+  const cmax = parseFloat(document.getElementById('cmax').value);
   const ncur = parseInt(document.getElementById('ncurves').value);
   const xmin = parseFloat(document.getElementById('xmin').value);
   const xmax = parseFloat(document.getElementById('xmax').value);
@@ -230,20 +232,50 @@ function redrawPlot(){
   document.getElementById('orth-count-val').innerText = orthCount;
 
   const xs = linspace(xmin, xmax, samples);
-  const Cvals = makeCvals_for_family(family, ncur, [xmin, xmax]);
-  const familyCurves = sample_family(family, Cvals, xs);
-  const Ks = makeKs_for_orth(family, orthCount, [xmin, xmax], [ymin, ymax]);
-  const orthCurves = sample_orthogonals(family, Ks, xs, [ymin, ymax]);
+  let familyCurves = [];
+  let orthCurves = [];
 
+  if(preset === 'circles'){
+    const Cvals = makeCvals_for_family('circles', ncur, [xmin, xmax], cmin, cmax);
+    familyCurves = sample_family_circles(Cvals, xs);
+    const Ks = makeKs_for_orth('circles', orthCount, [xmin, xmax], [ymin, ymax]);
+    orthCurves = sample_orth_analytic('circles', Ks, xs);
+  } else if(preset === 'parabolas'){
+    const Cvals = makeCvals_for_family('parabolas', ncur, [xmin, xmax], cmin, cmax);
+    // explicit y = C x^2
+    const f = function(x,C){ return C * x * x; };
+    familyCurves = sample_family_explicit(f, Cvals, xs);
+    const Ks = makeKs_for_orth('parabolas', orthCount, [xmin, xmax], [ymin,ymax]);
+    orthCurves = sample_orth_analytic('parabolas', Ks, xs);
+  } else if(preset === 'exponential'){
+    const Cvals = makeCvals_for_family('exponential', ncur, [xmin, xmax], cmin, cmax);
+    const f = function(x,C){ return C * Math.exp(x); };
+    familyCurves = sample_family_explicit(f, Cvals, xs);
+    const Ks = makeKs_for_orth('exponential', orthCount, [xmin, xmax], [ymin,ymax]);
+    orthCurves = sample_orth_analytic('exponential', Ks, xs);
+  } else {
+    // custom explicit expression provided by user
+    // build function safely using Function constructor
+    let f;
+    try{
+      f = new Function('x','C','return (' + expr + ');');
+      // quick test
+      const testv = f(0.1, (cmin+cmax)/2);
+      if(!isFinite(testv)){
+        // allow non-finite but warn
+      }
+    } catch(e){ alert('Error in expression: ' + e); return; }
+
+    const Cvals = makeCvals_for_family('custom', ncur, [xmin, xmax], cmin, cmax);
+    familyCurves = sample_family_explicit(f, Cvals, xs);
+    // Build orthogonals numerically: may be slow for high sample counts
+    orthCurves = build_orthogonals_custom(f, cmin, cmax, xs, orthCount, [xmin,xmax], [ymin,ymax]);
+  }
+
+  // build traces
   const traces = [];
-  // family traces
-  for(const c of familyCurves){
-    traces.push({ x: c.x, y: c.y, mode:'lines', line:{width:1.5}, hoverinfo:'none' });
-  }
-  // orth traces (dashed, thicker)
-  for(const o of orthCurves){
-    traces.push({ x: o.x, y: o.y, mode:'lines', line:{width:2,dash:'dashdot'}, hoverinfo:'none' });
-  }
+  for(const c of familyCurves){ traces.push({ x: c.x, y: c.y, mode:'lines', line:{width:1.5}, hoverinfo:'none' }); }
+  for(const o of orthCurves){ traces.push({ x: o.x, y: o.y, mode:'lines', line:{width:2,dash:'dashdot'}, hoverinfo:'none' }); }
 
   const layout = {
     xaxis:{range:[xmin, xmax], zeroline:true, title:'x'},
@@ -258,24 +290,19 @@ function redrawPlot(){
   Plotly.newPlot('plotly', traces, layout, {displayModeBar:true});
 }
 
-// ---- wire UI ----
+// Wire UI
+const inputs = ['preset','expr','cmin','cmax','ncurves','xmin','xmax','ymin','ymax','samples','orth-count'];
+for(const id of inputs){ const el=document.getElementById(id); if(el) el.oninput = redrawPlot; }
 document.getElementById('redraw').onclick = redrawPlot;
-document.getElementById('family').onchange = redrawPlot;
-const sliders = ['ncurves','samples','orth-count','xmin','xmax','ymin','ymax'];
-for(const id of sliders){ document.getElementById(id).oninput = redrawPlot; }
-
-// additional live labels
+document.getElementById('savepng').onclick = ()=>{ Plotly.toImage('plotly', {format:'png',height:720, width:1000}).then(function(url){ const a = document.createElement('a'); a.href = url; a.download = 'orthogonal_trajectories.png'; document.body.appendChild(a); a.click(); a.remove(); }); };
+// live labels
 document.getElementById('ncurves').oninput = ()=> { document.getElementById('ncurves-val').innerText = document.getElementById('ncurves').value; };
 document.getElementById('samples').oninput = ()=> { document.getElementById('samples-val').innerText = document.getElementById('samples').value; };
 document.getElementById('orth-count').oninput = ()=> { document.getElementById('orth-count-val').innerText = document.getElementById('orth-count').value; };
-
-// download PNG
-document.getElementById('savepng').onclick = ()=>{ Plotly.toImage('plotly', {format:'png',height:720, width:1000}).then(function(url){
-    const a = document.createElement('a'); a.href = url; a.download = 'orthogonal_trajectories.png'; document.body.appendChild(a); a.click(); a.remove();
-  }); };
 
 // initial draw
 redrawPlot();
 </script>
 </body>
 </html>
+
