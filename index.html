@@ -1,90 +1,183 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Family of Curves — Manual Parameter Control</title>
-<script src="https://www.desmos.com/api/v1.6/calculator.js" defer></script>
-<style>
-  body{font-family:system-ui;margin:0;background:#f7fafc;color:#0f172a}
-  header{padding:14px;background:linear-gradient(90deg,#0ea5a4,#3b82f6);color:#fff;font-weight:600}
-  .page{display:flex;gap:20px;padding:18px}
-  .left{width:360px;background:#fff;padding:16px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
-  .right{flex:1;background:#fff;padding:12px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06);min-height:720px}
-  textarea,input{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;margin:4px 0}
-  #calculator{width:100%;height:700px;border:1px solid #ddd;border-radius:6px}
-  button{padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;width:100%;margin-top:10px;font-size:16px}
-</style>
+  <meta charset="utf-8" />
+  <title>Family of Curves — Manual Parameter (robust)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://www.desmos.com/api/v1.6/calculator.js" defer></script>
+  <style>
+    body{font-family:system-ui,Arial;margin:0;background:#f7fafc;color:#0f172a}
+    header{padding:14px;background:linear-gradient(90deg,#0ea5a4,#3b82f6);color:#fff;font-weight:600}
+    .page{display:flex;gap:20px;padding:18px}
+    .left{width:360px;background:#fff;padding:16px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+    .right{flex:1;background:#fff;padding:12px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06);min-height:720px}
+    textarea,input{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;margin:6px 0}
+    #calculator{width:100%;height:700px;border:1px solid #ddd;border-radius:6px}
+    button{padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;width:100%;margin-top:10px;font-size:16px}
+    small{color:#64748b}
+  </style>
 </head>
 <body>
+  <header>Family of Curves — Manual Parameter (robust)</header>
 
-<header>Family of Curves (Manual Parameter)</header>
+  <div class="page">
+    <div class="left">
+      <label><strong>Equation (use x, y & ONE parameter)</strong></label>
+      <textarea id="eq">x^2 + y^2 = c</textarea>
 
-<div class="page">
-  <div class="left">
+      <label>Parameter name (example: c, k, a)</label>
+      <input id="param" value="c">
 
-    <label>Equation (use x, y & ONE parameter):</label>
-    <textarea id="eq">x^2 + y^2 = c</textarea>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">
+          <label>Min</label>
+          <input id="min" type="number" value="1" step="1">
+        </div>
+        <div style="flex:1">
+          <label>Max</label>
+          <input id="max" type="number" value="4" step="1">
+        </div>
+        <div style="flex:1">
+          <label>Step</label>
+          <input id="step" type="number" value="1" step="0.1">
+        </div>
+      </div>
 
-    <label>Parameter name (example: c, k, a):</label>
-    <input id="param" value="c">
+      <button id="draw">Draw Family</button>
+      <small>If you still see nothing: open DevTools → Console and paste the console output here so I can debug.</small>
+    </div>
 
-    <label>Min value:</label>
-    <input id="min" type="number" value="1">
-
-    <label>Max value:</label>
-    <input id="max" type="number" value="4">
-
-    <label>Step:</label>
-    <input id="step" type="number" value="1">
-
-    <button id="draw">Draw Family</button>
-
-  </div>
-
-  <div class="right">
+    <div class="right">
       <div id="calculator"></div>
+      <iframe id="desmos-fallback" src="about:blank" style="display:none; width:100%; height:700px; border-radius:6px; border:1px solid #e6e6e6"></iframe>
+    </div>
   </div>
-</div>
 
 <script>
-window.addEventListener("load", function() {
+(function(){
+  const MAX_CURVES = 500;
 
-    let calc = Desmos.GraphingCalculator(document.getElementById("calculator"), {
-        keypad: false,
-        expressions: true
-    });
+  function showFallback(){
+    console.warn('Showing Desmos iframe fallback');
+    document.getElementById('calculator').style.display = 'none';
+    const iframe = document.getElementById('desmos-fallback');
+    iframe.style.display = 'block';
+    iframe.src = 'https://www.desmos.com/calculator';
+  }
 
-    function drawFamily() {
-        let eq = document.getElementById("eq").value.trim();
-        let p = document.getElementById("param").value.trim();
-        let min = parseFloat(document.getElementById("min").value);
-        let max = parseFloat(document.getElementById("max").value);
-        let step = parseFloat(document.getElementById("step").value);
+  // Replace whole-word occurrences of `name` with `(value)` in latex string
+  function substituteParamWholeWord(latex, name, value){
+    // escape regex special chars in name
+    const esc = name.replace(/[.*+?^${}()|[\\\]\\\\]/g, '\\\\$&');
+    // use lookarounds to ensure whole-word match (not part of other tokens)
+    const re = new RegExp('(?<![A-Za-z0-9_\\\\])' + esc + '(?![A-Za-z0-9_])', 'g');
+    return latex.replace(re, '(' + value + ')');
+  }
 
-        if (!eq.includes(p)) {
-            alert("Your equation does not contain the parameter '" + p + "'");
-            return;
-        }
-
-        let exprs = [];
-        let id = 0;
-
-        for (let v = min; v <= max; v += step) {
-            let latex = eq.replace(new RegExp(p, "g"), "(" + v + ")");
-            exprs.push({
-                id: "f" + (id++),
-                latex: latex
-            });
-        }
-
-        calc.setExpressions([]); // clear old
-        calc.setExpressions(exprs);
+  // robust integer count loop (avoid floating step loop issues)
+  function generateValues(min, max, step){
+    if(step === 0 || !isFinite(step)) return [];
+    const values = [];
+    // compute count as floor((max - min)/step) + 1, but handle negative step
+    const span = max - min;
+    const sign = step > 0 ? 1 : -1;
+    if(sign * span < 0) return []; // no values
+    const count = Math.floor(Math.abs(span) / Math.abs(step)) + 1;
+    for(let i = 0; i < count; ++i){
+      const v = min + i * step;
+      // round to avoid floating noise
+      const rv = Math.round(v * 1e12) / 1e12;
+      // ensure not exceeding max due to rounding
+      if(step > 0 && rv > max + 1e-12) break;
+      if(step < 0 && rv < max - 1e-12) break;
+      values.push(rv);
+      if(values.length > MAX_CURVES) break;
     }
+    return values;
+  }
 
-    document.getElementById("draw").onclick = drawFamily;
+  // wait for Desmos; init or fallback
+  window.addEventListener('load', function(){
+    const calcDiv = document.getElementById('calculator');
+    if(!calcDiv) { console.error('Missing #calculator element'); showFallback(); return; }
 
-});
+    function initCalc(){
+      if(typeof Desmos === 'undefined'){
+        console.warn('Desmos script not available; using fallback iframe');
+        showFallback(); return;
+      }
+      let calc;
+      try {
+        calc = Desmos.GraphingCalculator(calcDiv, {expressions:true, keypad:false});
+      } catch(e){
+        console.error('Failed to initialize Desmos:', e);
+        showFallback(); return;
+      }
+
+      // set nice bounds
+      try { calc.setMathBounds({left:-30, right:130, bottom:-50, top:50}); } catch(e){}
+
+      document.getElementById('draw').onclick = function(){
+        try {
+          const raw = document.getElementById('eq').value.trim();
+          if(!raw){ alert('Enter an equation'); return; }
+          const param = document.getElementById('param').value.trim();
+          if(!param){ alert('Enter a parameter name (eg c or k)'); return; }
+          if(!raw.includes(param)){
+            const ok = confirm("Equation doesn't contain the parameter '"+param+"'. Continue and plot equation as-is?");
+            if(!ok) return;
+          }
+          const min = parseFloat(document.getElementById('min').value);
+          const max = parseFloat(document.getElementById('max').value);
+          let step = parseFloat(document.getElementById('step').value);
+          if(!isFinite(step) || step === 0) step = 1;
+
+          const values = generateValues(min, max, step);
+          if(values.length === 0){
+            alert('Parameter value list empty. Check min/max/step.');
+            return;
+          }
+          if(values.length > MAX_CURVES){
+            alert('Too many curves ('+values.length+'). Increase step or reduce range. Max '+MAX_CURVES);
+            return;
+          }
+
+          // prepare expressions by substituting numeric values
+          const exprs = [];
+          for(let i=0;i<values.length;i++){
+            const v = values[i];
+            const substituted = substituteParamWholeWord(raw, param, v);
+            // final sanity: ensure substitution happened if param existed in string
+            exprs.push({ id: 'curve_'+i, latex: substituted, color: (i%4===0?Desmos.Colors.BLUE:(i%4===1?Desmos.Colors.PURPLE:(i%4===2?Desmos.Colors.RED:Desmos.Colors.ORANGE))) });
+          }
+
+          console.log('[family] clearing and setting '+exprs.length+' curves');
+          calc.setExpressions([]); // clear
+          calc.setExpressions(exprs);
+
+          alert('Plotted '+exprs.length+' curves for '+param+' from '+min+' to '+max+' step '+step);
+        } catch(err){
+          console.error('Draw error', err);
+          alert('Error while drawing. Check browser console for details.');
+        }
+      }; // draw onclick
+
+      console.log('Desmos initialized and Draw handler attached');
+    } // initCalc
+
+    // wait a bit for Desmos script to load (defer)
+    if(typeof Desmos === 'undefined'){
+      setTimeout(function(){
+        if(typeof Desmos === 'undefined'){
+          console.warn('Desmos still undefined after wait => fallback');
+          showFallback();
+        } else initCalc();
+      }, 700);
+    } else {
+      initCalc();
+    }
+  }); // load
+})();
 </script>
-
 </body>
 </html>
