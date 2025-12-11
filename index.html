@@ -1,147 +1,138 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Orthogonal Trajectories — Desmos Interactive</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orthogonal Trajectories — Desmos Interactive (fallback-safe)</title>
 
-  <!-- Load Desmos Calculator -->
+  <!-- Desmos API loaded with defer -->
   <script src="https://www.desmos.com/api/v1.6/calculator.js" defer></script>
 
   <style>
-    body{
-      margin:0;
-      background:#f7fafc;
-      font-family:system-ui, Arial;
-      color:#0f172a;
-    }
-    header{
-      padding:14px;
-      background:linear-gradient(90deg,#0ea5a4,#3b82f6);
-      color:white;
-      font-size:20px;
-      font-weight:600;
-    }
-    .container{
-      display:flex;
-      gap:20px;
-      padding:18px;
-    }
-    .left{
-      width:320px;
-      background:white;
-      padding:16px;
-      border-radius:8px;
-      box-shadow:0 4px 14px rgba(0,0,0,0.08);
-    }
-    .right{
-      flex:1;
-      background:white;
-      border-radius:8px;
-      padding:12px;
-      box-shadow:0 4px 14px rgba(0,0,0,0.08);
-    }
-    #calculator{
-      width:100%;
-      height:700px;
-    }
-    button{
-      padding:8px 14px;
-      border:none;
-      background:#3b82f6;
-      color:white;
-      border-radius:6px;
-      cursor:pointer;
-      margin-right:8px;
-    }
-    small{
-      color:#64748b;
-    }
+    body { margin:0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:#f7fafc; color:#0f172a; }
+    header { padding: 14px; background: linear-gradient(90deg,#0ea5a4,#3b82f6); color:white; font-weight:600; }
+    .page { display:flex; gap:20px; padding:18px; }
+    .left { width:340px; background:white; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
+    .right { flex:1; background:white; padding:12px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); min-height:720px; }
+    #calculator, #desmos-fallback { width:100%; height:700px; border-radius:6px; border:1px solid #e6e6e6; background:white; }
+    button { padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; margin-right:8px; }
+    small.note { color:#64748b; display:block; margin-top:8px; font-size:13px; }
   </style>
 </head>
-
 <body>
-<header>Orthogonal Trajectories — Desmos Interactive</header>
+  <header>Orthogonal Trajectories — Desmos Interactive</header>
 
-<div class="container">
-  <div class="left">
-    <h3>Preset slider values</h3>
-    <button id="set-example">Set Example</button>
-    <button id="fit-view">Fit View</button>
+  <div class="page">
+    <div class="left">
+      <h3>Preset slider values</h3>
+      <button id="set-example">Set Example</button>
+      <button id="fit-view">Fit View</button>
 
-    <hr>
+      <hr/>
 
-    <h3>Notes</h3>
-    <small>
-      • This is a real Desmos graph embedded into your website.<br>
-      • You can edit equations directly inside the graph.<br>
-      • Sliders for c and k update the red curve live.<br>
-      • ln(|x|) is undefined at x=0, so the curve breaks (same as your screenshot).
-    </small>
+      <h3>Notes</h3>
+      <small class="note">
+        • This page embeds the Desmos graph. If the Desmos script is blocked by an extension, the page will show a fallback Desmos iframe automatically.<br>
+        • Edit equations inside the embedded graph. Use the sliders for <code>c</code> and <code>k</code>.<br>
+        • <code>ln(|x|)</code> is undefined at x=0 → Desmos shows a gap there (expected).
+      </small>
+    </div>
+
+    <div class="right">
+      <!-- Primary container for the Desmos calculator -->
+      <div id="calculator" aria-label="Desmos calculator container"></div>
+
+      <!-- Hidden fallback iframe (shown only if needed) -->
+      <iframe id="desmos-fallback" src="about:blank" style="display:none;"></iframe>
+    </div>
   </div>
-
-  <div class="right">
-    <div id="calculator"></div>
-  </div>
-</div>
 
 <script>
-window.addEventListener("load", function(){
+(function(){
+  // Small helper to show fallback iframe if Desmos init fails
+  function showFallback() {
+    const calcDiv = document.getElementById('calculator');
+    const iframe = document.getElementById('desmos-fallback');
+    if(calcDiv) calcDiv.style.display = 'none';
+    iframe.style.display = 'block';
+    // use the public Desmos site in iframe (simple, reliable)
+    iframe.src = 'https://www.desmos.com/calculator';
+    console.warn('Desmos failed to initialize — showing iframe fallback.');
+  }
 
-  const elt = document.getElementById("calculator");
+  // Initialize Desmos after window load (safer)
+  window.addEventListener('load', function(){
+    const calcDiv = document.getElementById('calculator');
+    if(!calcDiv){ console.error('No #calculator element found.'); showFallback(); return; }
 
-  const calculator = Desmos.GraphingCalculator(elt, {
-    keypad: false,
-    expressions: true,
-    settingsMenu: true
-  });
-
-  // Load the equations exactly like your screenshot
-  calculator.setExpressions([
-    {
-      id: 'circle',
-      latex: 'x^2 + y^2 = 299',
-      color: Desmos.Colors.ORANGE
-    },
-    {
-      id: 'curve',
-      latex: 'y + \\frac{\\ln(|x|)}{2k} = c',
-      color: Desmos.Colors.RED
-    },
-    {
-      id: 'c',
-      latex: 'c = 1.7',
-      sliderBounds: {min: -10, max: 10, step: 0.01}
-    },
-    {
-      id: 'k',
-      latex: 'k = 0.8',
-      sliderBounds: {min: -10, max: 10, step: 0.01}
+    // If Desmos object isn't available (script blocked), fallback after small timeout
+    if(typeof Desmos === 'undefined'){
+      console.warn('Desmos object not found. Waiting 800ms before fallback...');
+      setTimeout(function(){
+        if(typeof Desmos === 'undefined'){
+          console.error('Desmos script still missing (likely blocked by extension). Using fallback iframe.');
+          showFallback();
+        }
+      }, 800);
+      return;
     }
-  ]);
 
-  // Set initial graph bounds
-  calculator.setMathBounds({
-    left: -30,
-    right: 130,
-    bottom: -50,
-    top: 50
+    // Try to create the Desmos calculator; wrap in try/catch to detect errors
+    let calculator;
+    try {
+      calculator = Desmos.GraphingCalculator(calcDiv, {
+        keypad: false,
+        expressions: true,
+        settingsMenu: true
+      });
+    } catch(e) {
+      console.error('Error when creating Desmos calculator:', e);
+      showFallback();
+      return;
+    }
+
+    // Set expressions (circle + curve + sliders)
+    try {
+      calculator.setExpressions([
+        { id: 'circle', latex: 'x^2 + y^2 = 299', color: Desmos.Colors.ORANGE },
+        { id: 'curve', latex: 'y + \\frac{\\ln(|x|)}{2k} = c', color: Desmos.Colors.RED },
+        { id: 'c', latex: 'c = 1.7', sliderBounds: { min: -10, max: 10, step: 0.01 } },
+        { id: 'k', latex: 'k = 0.8', sliderBounds: { min: -10, max: 10, step: 0.01 } }
+      ]);
+    } catch(e) {
+      console.error('Error setting expressions:', e);
+      showFallback();
+      return;
+    }
+
+    // Set a wide initial viewport like your screenshot
+    try {
+      calculator.setMathBounds({ left: -30, right: 130, bottom: -50, top: 50 });
+    } catch(e) {
+      console.warn('setMathBounds failed:', e);
+    }
+
+    // Buttons
+    document.getElementById('set-example').addEventListener('click', function(){
+      try {
+        calculator.setExpression({ id: 'c', latex: 'c = 1.7' });
+        calculator.setExpression({ id: 'k', latex: 'k = 0.8' });
+        calculator.setExpression({ id: 'circle', latex: 'x^2 + y^2 = 299' });
+        calculator.setExpression({ id: 'curve', latex: 'y + \\frac{\\ln(|x|)}{2k} = c' });
+        calculator.setMathBounds({ left: -30, right: 130, bottom: -50, top: 50 });
+      } catch(e){ console.error('Error on set-example:', e); }
+    });
+
+    document.getElementById('fit-view').addEventListener('click', function(){
+      try {
+        calculator.setMathBounds({ left: -40, right: 140, bottom: -60, top: 60 });
+      } catch(e){ console.error('Error on fit-view:', e); }
+    });
+
+    // expose for debugging
+    window._myDesmosCalculator = calculator;
   });
-
-  // Button: Reset sliders to example
-  document.getElementById("set-example").onclick = () => {
-    calculator.setExpression({ id: 'c', latex: 'c = 1.7' });
-    calculator.setExpression({ id: 'k', latex: 'k = 0.8' });
-    calculator.setMathBounds({ left:-30, right:130, bottom:-50, top:50 });
-  };
-
-  // Button: Fit view
-  document.getElementById("fit-view").onclick = () => {
-    calculator.setMathBounds({ left:-40, right:140, bottom:-60, top:60 });
-  };
-
-});
+})();
 </script>
-
 </body>
 </html>
