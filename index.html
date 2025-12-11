@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Orthogonal Trajectories — Desmos Interactive (fallback-safe)</title>
+  <title>Orthogonal Trajectories — Family Drawer (Desmos)</title>
 
   <!-- Desmos API loaded with defer -->
   <script src="https://www.desmos.com/api/v1.6/calculator.js" defer></script>
@@ -12,126 +12,183 @@
     body { margin:0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:#f7fafc; color:#0f172a; }
     header { padding: 14px; background: linear-gradient(90deg,#0ea5a4,#3b82f6); color:white; font-weight:600; }
     .page { display:flex; gap:20px; padding:18px; }
-    .left { width:340px; background:white; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
+    .left { width:360px; background:white; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
     .right { flex:1; background:white; padding:12px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); min-height:720px; }
     #calculator, #desmos-fallback { width:100%; height:700px; border-radius:6px; border:1px solid #e6e6e6; background:white; }
+    label { display:block; margin:8px 0 4px; font-weight:600; }
+    textarea { width:100%; min-height:60px; font-family:monospace; padding:8px; box-sizing:border-box; border-radius:6px; border:1px solid #e6e6e6; }
+    input[type=number] { width:100px; padding:6px; border-radius:6px; border:1px solid #e6e6e6; }
+    .row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
     button { padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; margin-right:8px; }
     small.note { color:#64748b; display:block; margin-top:8px; font-size:13px; }
   </style>
 </head>
 <body>
-  <header>Orthogonal Trajectories — Desmos Interactive</header>
+  <header>Orthogonal Trajectories — Family Drawer (Desmos)</header>
 
   <div class="page">
     <div class="left">
-      <h3>Preset slider values</h3>
-      <button id="set-example">Set Example</button>
-      <button id="fit-view">Fit View</button>
+      <label for="equation">Equation (use x and y, Desmos syntax)</label>
+      <textarea id="equation">y + \\frac{\\ln(|x|)}{2k} = c</textarea>
+      <small class="note">Examples: <code>x^2 + y^2 = k</code>, <code>y = c*sin(x)</code>, <code>y + ln(|x|)/(2k) = c</code></small>
+
+      <label>Parameter sweep (applies to ALL detected parameters)</label>
+      <div class="row">
+        <div>
+          <small>min</small>
+          <input id="pmin" type="number" value="-5" step="0.5">
+        </div>
+        <div>
+          <small>max</small>
+          <input id="pmax" type="number" value="5" step="0.5">
+        </div>
+        <div>
+          <small>step</small>
+          <input id="pstep" type="number" value="1" step="0.1">
+        </div>
+      </div>
+
+      <div style="margin-top:8px;">
+        <button id="draw">Draw Family</button>
+        <button id="set-circle">Example: circles</button>
+        <button id="set-example">Example: screenshot</button>
+      </div>
 
       <hr/>
 
-      <h3>Notes</h3>
+      <h4>Notes</h4>
       <small class="note">
-        • This page embeds the Desmos graph. If the Desmos script is blocked by an extension, the page will show a fallback Desmos iframe automatically.<br>
-        • Edit equations inside the embedded graph. Use the sliders for <code>c</code> and <code>k</code>.<br>
-        • <code>ln(|x|)</code> is undefined at x=0 → Desmos shows a gap there (expected).
+        • The page finds identifiers other than <code>x</code> and <code>y</code> and treats them as parameters.<br>
+        • For each parameter (e.g. <code>k</code>) the script defines <code>k = seq(i, i, pmin, pmax, pstep)</code> so Desmos draws many curves.<br>
+        • If no parameter is found, the equation is plotted normally.<br>
+        • If Desmos is blocked by an extension, the page falls back to an iframe of Desmos.
       </small>
     </div>
 
     <div class="right">
-      <!-- Primary container for the Desmos calculator -->
       <div id="calculator" aria-label="Desmos calculator container"></div>
-
-      <!-- Hidden fallback iframe (shown only if needed) -->
       <iframe id="desmos-fallback" src="about:blank" style="display:none;"></iframe>
     </div>
   </div>
 
 <script>
 (function(){
-  // Small helper to show fallback iframe if Desmos init fails
-  function showFallback() {
-    const calcDiv = document.getElementById('calculator');
-    const iframe = document.getElementById('desmos-fallback');
-    if(calcDiv) calcDiv.style.display = 'none';
-    iframe.style.display = 'block';
-    // use the public Desmos site in iframe (simple, reliable)
-    iframe.src = 'https://www.desmos.com/calculator';
-    console.warn('Desmos failed to initialize — showing iframe fallback.');
+  // helper: find variable identifiers in expression
+  function findParams(expr) {
+    // match word tokens, but exclude numbers and typical functions/constants
+    const reserved = new Set(['x','y','e','pi','ln','log','sin','cos','tan','sqrt','abs','sec','csc','cot','arcsin','arccos','arctan','exp','floor','ceil','frac','mod','min','max']);
+    const tokens = expr.match(/[a-zA-Z]\\w*/g) || [];
+    const params = [];
+    for(const t of tokens){
+      if(!reserved.has(t) && !params.includes(t)) params.push(t);
+    }
+    return params;
   }
 
-  // Initialize Desmos after window load (safer)
+  function showFallback(){
+    document.getElementById('calculator').style.display = 'none';
+    const iframe = document.getElementById('desmos-fallback');
+    iframe.style.display = 'block';
+    iframe.src = 'https://www.desmos.com/calculator';
+  }
+
   window.addEventListener('load', function(){
     const calcDiv = document.getElementById('calculator');
-    if(!calcDiv){ console.error('No #calculator element found.'); showFallback(); return; }
+    if(!calcDiv){ console.error('No calculator element'); showFallback(); return; }
 
-    // If Desmos object isn't available (script blocked), fallback after small timeout
+    // wait a little if Desmos hasn't loaded yet
     if(typeof Desmos === 'undefined'){
-      console.warn('Desmos object not found. Waiting 800ms before fallback...');
       setTimeout(function(){
         if(typeof Desmos === 'undefined'){
-          console.error('Desmos script still missing (likely blocked by extension). Using fallback iframe.');
+          console.warn('Desmos script not found; using fallback iframe.');
           showFallback();
+        } else {
+          initDesmos();
         }
-      }, 800);
-      return;
+      }, 600);
+    } else {
+      initDesmos();
     }
 
-    // Try to create the Desmos calculator; wrap in try/catch to detect errors
-    let calculator;
-    try {
-      calculator = Desmos.GraphingCalculator(calcDiv, {
-        keypad: false,
-        expressions: true,
-        settingsMenu: true
+    function initDesmos(){
+      let calculator;
+      try {
+        calculator = Desmos.GraphingCalculator(calcDiv, {expressions:true, keypad:false, settingsMenu:true});
+      } catch(e){
+        console.error('Desmos init error', e);
+        showFallback();
+        return;
+      }
+
+      // prefill with a reasonable state
+      calculator.setMathBounds({left:-30, right:130, bottom:-50, top:50});
+
+      // helper to set expressions with families
+      function drawFamilyFromInput(){
+        const expr = document.getElementById('equation').value.trim();
+        if(expr.length === 0){ alert('Enter an equation'); return; }
+
+        // find parameters
+        const params = findParams(expr);
+        // remove 'x' and 'y' if present mistakenly
+        const filteredParams = params.filter(p=> p !== 'x' && p !== 'y');
+
+        // parameter sweep settings
+        const pmin = parseFloat(document.getElementById('pmin').value) || -5;
+        const pmax = parseFloat(document.getElementById('pmax').value) || 5;
+        let pstep = parseFloat(document.getElementById('pstep').value);
+        if(!isFinite(pstep) || pstep === 0) pstep = 1;
+
+        // Build expressions array for Desmos
+        const exprs = [];
+
+        // If there are parameters, define them as sequences using seq(i,i,min,max,step)
+        // For example: k = seq(i, i, -5, 5, 1)
+        for(const p of filteredParams){
+          // use the same name as parameter, Desmos accepts seq with variable i
+          const seqLatex = `${p} = seq\\left(i, i, ${pmin}, ${pmax}, ${pstep}\\right)`;
+          exprs.push({ id: `param_${p}`, latex: seqLatex });
+        }
+
+        // Next: the main equation — we directly set it. If params exist, Desmos will interpret lists and draw family.
+        // Make sure to escape backslashes etc: user inputs are expected to be Desmos latex-friendly already.
+        exprs.push({ id: 'familyEq', latex: expr, color: Desmos.Colors.BLUE });
+
+        // Clear previous expressions then set new ones
+        try {
+          calculator.setExpressions([]); // clear
+          calculator.setExpressions(exprs);
+        } catch(e){
+          console.error('Error setting expressions:', e);
+          alert('Could not set expressions — check the equation syntax.');
+        }
+      }
+
+      // wire up UI
+      document.getElementById('draw').addEventListener('click', drawFamilyFromInput);
+
+      document.getElementById('set-circle').addEventListener('click', function(){
+        document.getElementById('equation').value = 'x^2 + y^2 = k';
+        document.getElementById('pmin').value = '1';
+        document.getElementById('pmax').value = '30';
+        document.getElementById('pstep').value = '3';
+        drawFamilyFromInput();
       });
-    } catch(e) {
-      console.error('Error when creating Desmos calculator:', e);
-      showFallback();
-      return;
-    }
 
-    // Set expressions (circle + curve + sliders)
-    try {
-      calculator.setExpressions([
-        { id: 'circle', latex: 'x^2 + y^2 = 299', color: Desmos.Colors.ORANGE },
-        { id: 'curve', latex: 'y + \\frac{\\ln(|x|)}{2k} = c', color: Desmos.Colors.RED },
-        { id: 'c', latex: 'c = 1.7', sliderBounds: { min: -10, max: 10, step: 0.01 } },
-        { id: 'k', latex: 'k = 0.8', sliderBounds: { min: -10, max: 10, step: 0.01 } }
-      ]);
-    } catch(e) {
-      console.error('Error setting expressions:', e);
-      showFallback();
-      return;
-    }
+      document.getElementById('set-example').addEventListener('click', function(){
+        document.getElementById('equation').value = 'y + \\frac{\\ln(|x|)}{2k} = c';
+        document.getElementById('pmin').value = '-5';
+        document.getElementById('pmax').value = '5';
+        document.getElementById('pstep').value = '1';
+        drawFamilyFromInput();
+      });
 
-    // Set a wide initial viewport like your screenshot
-    try {
-      calculator.setMathBounds({ left: -30, right: 130, bottom: -50, top: 50 });
-    } catch(e) {
-      console.warn('setMathBounds failed:', e);
-    }
+      // initial draw
+      drawFamilyFromInput();
 
-    // Buttons
-    document.getElementById('set-example').addEventListener('click', function(){
-      try {
-        calculator.setExpression({ id: 'c', latex: 'c = 1.7' });
-        calculator.setExpression({ id: 'k', latex: 'k = 0.8' });
-        calculator.setExpression({ id: 'circle', latex: 'x^2 + y^2 = 299' });
-        calculator.setExpression({ id: 'curve', latex: 'y + \\frac{\\ln(|x|)}{2k} = c' });
-        calculator.setMathBounds({ left: -30, right: 130, bottom: -50, top: 50 });
-      } catch(e){ console.error('Error on set-example:', e); }
-    });
-
-    document.getElementById('fit-view').addEventListener('click', function(){
-      try {
-        calculator.setMathBounds({ left: -40, right: 140, bottom: -60, top: 60 });
-      } catch(e){ console.error('Error on fit-view:', e); }
-    });
-
-    // expose for debugging
-    window._myDesmosCalculator = calculator;
+    } // end initDesmos
   });
+
 })();
 </script>
 </body>
