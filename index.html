@@ -1,86 +1,64 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Orthogonal Trajectories — Family Drawer (Draw Only)</title>
-
-  <!-- Desmos API loaded with defer -->
-  <script src="https://www.desmos.com/api/v1.6/calculator.js" defer></script>
-
-  <style>
-    body { margin:0; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:#f7fafc; color:#0f172a; }
-    header { padding: 14px; background: linear-gradient(90deg,#0ea5a4,#3b82f6); color:white; font-weight:600; }
-    .page { display:flex; gap:20px; padding:18px; }
-    .left { width:360px; background:white; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
-    .right { flex:1; background:white; padding:12px; border-radius:8px; box-shadow:0 6px 18px rgba(15,23,42,0.06); min-height:720px; }
-    #calculator, #desmos-fallback { width:100%; height:700px; border-radius:6px; border:1px solid #e6e6e6; background:white; }
-    label { display:block; margin:8px 0 4px; font-weight:600; }
-    textarea { width:100%; min-height:80px; font-family:monospace; padding:8px; box-sizing:border-box; border-radius:6px; border:1px solid #e6e6e6; }
-    input[type=number] { width:100px; padding:6px; border-radius:6px; border:1px solid #e6e6e6; }
-    .row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
-    button { padding:8px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; margin-right:8px; }
-    small.note { color:#64748b; display:block; margin-top:8px; font-size:13px; }
-  </style>
+<meta charset="utf-8">
+<title>Debug — Family Drawer (Draw Only)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://www.desmos.com/api/v1.6/calculator.js" defer></script>
+<style>
+  body{font-family:system-ui;margin:0;background:#f7fafc;color:#0f172a}
+  header{padding:14px;background:linear-gradient(90deg,#0ea5a4,#3b82f6);color:#fff;font-weight:600}
+  .page{display:flex;gap:20px;padding:18px}
+  .left{width:360px;background:#fff;padding:16px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+  .right{flex:1;background:#fff;padding:12px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06);min-height:720px}
+  textarea{width:100%;min-height:80px;font-family:monospace;padding:8px;border-radius:6px;border:1px solid #e6e6e6}
+  input[type=number]{width:100px;padding:6px;border-radius:6px;border:1px solid #e6e6e6}
+  button{padding:8px 12px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer}
+  #calculator,#desmos-fallback{width:100%;height:700px;border-radius:6px;border:1px solid #e6e6e6}
+</style>
 </head>
 <body>
-  <header>Orthogonal Trajectories — Family Drawer</header>
+<header>Orthogonal Trajectories — Debug Family Drawer</header>
+<div class="page">
+  <div class="left">
+    <label>Equation (x,y; Desmos/LaTeX)</label>
+    <textarea id="equation">x^2 + y^2 = k</textarea>
 
-  <div class="page">
-    <div class="left">
-      <label for="equation">Equation (use x and y; Desmos/LaTeX syntax)</label>
-      <textarea id="equation">x^2 + y^2 = k</textarea>
-      <small class="note">Examples: <code>x^2 + y^2 = k</code>, <code>y = c*sin(x)</code>, <code>y + ln(|x|)/(2k) = c</code></small>
-
-      <label>Parameter sweep (applies to ALL detected parameters)</label>
-      <div class="row">
-        <div>
-          <small>min</small>
-          <input id="pmin" type="number" value="1" step="0.5">
-        </div>
-        <div>
-          <small>max</small>
-          <input id="pmax" type="number" value="30" step="0.5">
-        </div>
-        <div>
-          <small>step</small>
-          <input id="pstep" type="number" value="1" step="0.1">
-        </div>
-      </div>
-
-      <div style="margin-top:8px;">
-        <button id="draw">Draw Family</button>
-      </div>
-
-      <hr/>
-
-      <h4>Notes</h4>
-      <small class="note">
-        • The script detects identifiers other than <code>x</code> and <code>y</code> and treats them as parameters.<br>
-        • It substitutes numeric values into the equation and sends many concrete equations to Desmos (so Desmos will not ask you to define the variable).<br>
-        • To avoid overloading Desmos, total plotted curves are capped at <strong>300</strong>. Increase step or reduce range to draw fewer curves.<br>
-        • If Desmos is blocked by an extension, the page falls back to an iframe of Desmos.
-      </small>
+    <label style="margin-top:10px">Parameter sweep (applies to ALL detected parameters)</label>
+    <div style="display:flex;gap:8px;margin:8px 0 12px">
+      <div><small>min</small><input id="pmin" type="number" value="1" step="0.5"></div>
+      <div><small>max</small><input id="pmax" type="number" value="30" step="0.5"></div>
+      <div><small>step</small><input id="pstep" type="number" value="1" step="0.1"></div>
     </div>
 
-    <div class="right">
-      <div id="calculator" aria-label="Desmos calculator container"></div>
-      <iframe id="desmos-fallback" src="about:blank" style="display:none;"></iframe>
-    </div>
+    <div><button id="draw">Draw Family</button></div>
+
+    <hr>
+    <small>Open DevTools Console (F12) and click Draw. Console will show debug logs. Paste logs here if it still fails.</small>
   </div>
+
+  <div class="right">
+    <div id="calculator"></div>
+    <iframe id="desmos-fallback" src="about:blank" style="display:none"></iframe>
+  </div>
+</div>
 
 <script>
 (function(){
-  // robust token-finding (find identifiers that look like variables)
-  function findParams(latex) {
-    // exclude common math words
-    const reserved = new Set([
-      'x','y','e','pi','ln','log','sin','cos','tan','sqrt','abs','sec','csc','cot',
-      'arcsin','arccos','arctan','exp','floor','ceil','frac','mod','min','max',
-      'sin^{-1}','cos^{-1}','tan^{-1}'
-    ]);
-    // find letter-starting tokens
-    const tokens = latex.match(/[a-zA-Z]\\w*/g) || [];
+  // debug helpers
+  function log(msg){ try{ console.log('[DFD] ' + msg); }catch(e){} }
+  function err(msg){ try{ console.error('[DFD] ' + msg); }catch(e){} }
+
+  function showFallback(){
+    log('Showing iframe fallback');
+    document.getElementById('calculator').style.display='none';
+    const iframe = document.getElementById('desmos-fallback'); iframe.style.display='block'; iframe.src='https://www.desmos.com/calculator';
+  }
+
+  // find parameter tokens
+  function findParams(latex){
+    const reserved = new Set(['x','y','e','pi','ln','log','sin','cos','tan','sqrt','abs','exp','frac','mod','min','max']);
+    const tokens = (latex.match(/[a-zA-Z]\w*/g) || []);
     const params = [];
     for(const t of tokens){
       if(!reserved.has(t) && !params.includes(t)) params.push(t);
@@ -88,155 +66,97 @@
     return params;
   }
 
-  function showFallback(){
-    const calcDiv = document.getElementById('calculator');
-    const iframe = document.getElementById('desmos-fallback');
-    if(calcDiv) calcDiv.style.display = 'none';
-    iframe.style.display = 'block';
-    iframe.src = 'https://www.desmos.com/calculator';
-  }
-
-  // generate a float range inclusive of endpoints
-  function frange(min, max, step){
-    const out = [];
-    if(step === 0) return out;
-    // avoid infinite loop due to floating errors
-    const sign = step > 0 ? 1 : -1;
-    let v = min;
-    const limit = max + sign * 1e-12;
-    while((step > 0 && v <= limit) || (step < 0 && v >= limit)){
-      // round to avoid long floating decimals
-      out.push(Math.round(v * 1e12) / 1e12);
-      v += step;
-      // safety
-      if(out.length > 10000) break;
-    }
+  function frange(min,max,step){
+    const out=[]; if(step===0) return out;
+    const sign = step>0?1:-1; let v=min; const limit=max + sign*1e-12;
+    while((step>0 && v<=limit) || (step<0 && v>=limit)){ out.push(Math.round(v*1e12)/1e12); v+=step; if(out.length>5000) break; }
     return out;
   }
 
-  // create cartesian product of arrays
-  function cartesian(arrays){
-    return arrays.reduce((acc, arr) => {
-      const res = [];
-      for(const a of acc){
-        for(const b of arr){
-          res.push(a.concat([b]));
-        }
-      }
-      return res;
-    }, [[]]);
-  }
+  function cartesian(arrays){ return arrays.reduce((acc, arr)=>{ const res=[]; for(const a of acc){ for(const b of arr){ res.push(a.concat([b])); } } return res; }, [[]]); }
 
-  // replace parameter names safely in latex string with numeric literal
-  // uses boundary-aware regex: (^|[^A-Za-z0-9_])name([^A-Za-z0-9_]|$) -> preserve surrounding chars
   function substituteParam(latex, name, value){
-    // escape name for regex
-    const esc = name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
-    const re = new RegExp('(^|[^A-Za-z0-9_])' + esc + '([^A-Za-z0-9_]|$)', 'g');
-    // replacement keeps captured groups $1 and $2
-    return latex.replace(re, function(_, g1, g2){
-      return (g1 || '') + '(' + String(value) + ')' + (g2 || '');
-    });
+    // boundary-aware replace (avoid partial matches)
+    const esc = name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re = new RegExp('(^|[^A-Za-z0-9_])' + esc + '([^A-Za-z0-9_]|$)','g');
+    return latex.replace(re, function(_, g1, g2){ return (g1||'') + '(' + String(value) + ')' + (g2||''); });
   }
 
-  // initialize on window load
   window.addEventListener('load', function(){
+    log('Window loaded');
     const calcDiv = document.getElementById('calculator');
-    if(!calcDiv){ console.error('No calculator element'); showFallback(); return; }
-
-    // wait for Desmos script to be available
     if(typeof Desmos === 'undefined'){
-      setTimeout(function(){
-        if(typeof Desmos === 'undefined'){
-          console.warn('Desmos script missing; showing fallback iframe.');
-          showFallback();
-        } else {
-          initCalc();
-        }
-      }, 600);
-    } else {
-      initCalc();
-    }
+      log('Desmos not yet defined; waiting 700ms');
+      setTimeout(function(){ if(typeof Desmos === 'undefined'){ log('Desmos still undefined -> fallback'); showFallback(); } else init(); },700);
+    } else init();
 
-    function initCalc(){
+    function init(){
+      log('Initializing Desmos');
       let calculator;
-      try {
-        calculator = Desmos.GraphingCalculator(calcDiv, {expressions:true, keypad:false, settingsMenu:true});
-      } catch(e){
-        console.error('Desmos init error', e);
-        showFallback();
-        return;
+      try{
+        calculator = Desmos.GraphingCalculator(calcDiv,{expressions:true,keypad:false,settingsMenu:true});
+      }catch(e){
+        err('Desmos init failed: '+ e);
+        showFallback(); return;
       }
+      try{ calculator.setMathBounds({left:-30,right:130,bottom:-50,top:50}); }catch(e){}
 
-      // set a default viewport
-      try { calculator.setMathBounds({left:-30, right:130, bottom:-50, top:50}); } catch(e){}
-
+      // Attach click handler reliably
       const drawBtn = document.getElementById('draw');
-      drawBtn.addEventListener('click', function(){
-        const raw = document.getElementById('equation').value.trim();
-        if(!raw){ alert('Please enter an equation.'); return; }
+      drawBtn.onclick = function(){
+        try{
+          log('Draw clicked');
+          const raw = document.getElementById('equation').value.trim();
+          log('Raw equation: ' + raw);
+          if(!raw){ alert('Enter an equation'); return; }
 
-        // detect parameter names
-        const params = findParams(raw).filter(p => p !== 'x' && p !== 'y');
-        const pmin = parseFloat(document.getElementById('pmin').value) || 0;
-        const pmax = parseFloat(document.getElementById('pmax').value) || 0;
-        let pstep = parseFloat(document.getElementById('pstep').value);
-        if(!isFinite(pstep) || pstep === 0) pstep = 1;
+          const params = findParams(raw).filter(p=>p!=='x' && p!=='y');
+          log('Detected params: ' + JSON.stringify(params));
+          const pmin = parseFloat(document.getElementById('pmin').value) || 0;
+          const pmax = parseFloat(document.getElementById('pmax').value) || 0;
+          let pstep = parseFloat(document.getElementById('pstep').value); if(!isFinite(pstep)||pstep===0) pstep=1;
+          log('Range: ' + pmin + ' .. ' + pmax + ' step ' + pstep);
 
-        // build numeric lists for each parameter
-        const paramLists = {};
-        for(const p of params){
-          paramLists[p] = frange(pmin, pmax, pstep);
-          if(paramLists[p].length === 0){
-            alert('Parameter range for ' + p + ' produced no values. Check min/max/step.');
-            return;
+          const paramLists = {};
+          for(const p of params) paramLists[p] = frange(pmin,pmax,pstep);
+          log('Param lists lengths: ' + JSON.stringify(Object.fromEntries(Object.entries(paramLists).map(([k,v])=>[k,v.length]))));
+
+          let combos = [[]];
+          if(params.length>0){
+            const arrays = params.map(p=>paramLists[p]);
+            combos = cartesian(arrays);
           }
-        }
+          log('Combos count: ' + combos.length);
 
-        // compute combos
-        let combos = [[]];
-        let paramNames = [];
-        if(params.length > 0){
-          paramNames = params.slice();
-          const arrays = paramNames.map(n => paramLists[n]);
-          combos = cartesian(arrays);
-        }
+          const MAX = 300;
+          if(combos.length > MAX){ alert('Too many curves: '+combos.length + '. Increase step or reduce range (max ' + MAX + ')'); return; }
 
-        const MAX = 300;
-        if(combos.length > MAX){
-          alert('Too many curves (' + combos.length + '). Increase step or reduce range. Max ' + MAX + '.');
-          return;
-        }
-
-        // build expressions by substituting numeric values
-        const exprs = [];
-        if(params.length === 0){
-          exprs.push({ id: 'eq0', latex: raw, color: Desmos.Colors.BLUE });
-        } else {
-          for(let i=0;i<combos.length;i++){
-            let sub = raw;
-            for(let j=0;j<paramNames.length;j++){
-              sub = substituteParam(sub, paramNames[j], combos[i][j]);
+          const exprs = [];
+          if(params.length===0){
+            exprs.push({id:'eq0', latex:raw, color:Desmos.Colors.BLUE});
+          } else {
+            for(let i=0;i<combos.length;i++){
+              let sub = raw;
+              for(let j=0;j<params.length;j++){
+                sub = substituteParam(sub, params[j], combos[i][j]);
+              }
+              log('Substituted['+i+']: ' + sub);
+              exprs.push({id:'eq_'+i, latex:sub, color: (i%3===0?Desmos.Colors.BLUE: (i%3===1?Desmos.Colors.PURPLE:Desmos.Colors.RED))});
             }
-            // add each equation (cycle colors for better visibility)
-            const color = (i % 3 === 0) ? Desmos.Colors.BLUE : ((i % 3 === 1) ? Desmos.Colors.PURPLE : Desmos.Colors.RED);
-            exprs.push({ id: 'eq_' + i, latex: sub, color: color });
           }
-        }
 
-        // clear prev and set
-        try {
+          log('Clearing old expressions and setting new ('+exprs.length+' items)');
           calculator.setExpressions([]); // clear
           calculator.setExpressions(exprs);
-        } catch(e){
-          console.error('Failed to set expressions', e);
-          alert('Failed to draw. Check equation syntax (Desmos LaTeX) and try again.');
+          alert('Plotted ' + exprs.length + ' curve(s). Check graph (and console for logs).');
+        }catch(e){
+          err('Error in draw handler: ' + e);
+          alert('Error while drawing. See console logs.');
         }
-      });
+      }; // end onclick
 
-      // initial draw (optional)
-      // drawBtn.click();
-    } // end initCalc
+      log('Draw handler attached');
+    } // end init
   });
 })();
 </script>
