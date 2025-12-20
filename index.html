@@ -1,183 +1,224 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Family of Curves — Manual Parameter (robust)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <script src="https://www.desmos.com/api/v1.6/calculator.js" defer></script>
-  <style>
-    body{font-family:system-ui,Arial;margin:0;background:#f7fafc;color:#0f172a}
-    header{padding:14px;background:linear-gradient(90deg,#0ea5a4,#3b82f6);color:#fff;font-weight:600}
-    .page{display:flex;gap:20px;padding:18px}
-    .left{width:360px;background:#fff;padding:16px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
-    .right{flex:1;background:#fff;padding:12px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.06);min-height:720px}
-    textarea,input{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;margin:6px 0}
-    #calculator{width:100%;height:700px;border:1px solid #ddd;border-radius:6px}
-    button{padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;width:100%;margin-top:10px;font-size:16px}
-    small{color:#64748b}
-  </style>
+<meta charset="UTF-8">
+<title>Fourier’s Law – Heat Flow in Pipe</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #0f172a;
+    color: #e5e7eb;
+}
+
+header {
+    background: #020617;
+    padding: 20px;
+    text-align: center;
+}
+
+section {
+    padding: 20px;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.card {
+    background: #020617;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+}
+
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    background: #020617;
+    color: white;
+    border: 1px solid #334155;
+    border-radius: 5px;
+}
+
+button {
+    margin-top: 20px;
+    padding: 12px;
+    width: 100%;
+    background: #2563eb;
+    border: none;
+    color: white;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+.flex {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+canvas {
+    background: white;
+    border-radius: 8px;
+}
+
+.pipe {
+    width: 200px;
+    height: 200px;
+    margin: auto;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at center,
+        #ef4444 0%,
+        #ef4444 35%,
+        #f97316 36%,
+        #f97316 60%,
+        #64748b 61%);
+}
+</style>
 </head>
+
 <body>
-  <header>Family of Curves — Manual Parameter (robust)</header>
 
-  <div class="page">
-    <div class="left">
-      <label><strong>Equation (use x, y & ONE parameter)</strong></label>
-      <textarea id="eq">x^2 + y^2 = c</textarea>
+<header>
+<h1>Fourier’s Law – Heat Flow in Cylindrical Pipe</h1>
+<p>Steady-state conduction | Engineering Calculator</p>
+</header>
 
-      <label>Parameter name (example: c, k, a)</label>
-      <input id="param" value="c">
+<section class="flex">
 
-      <div style="display:flex;gap:8px">
-        <div style="flex:1">
-          <label>Min</label>
-          <input id="min" type="number" value="1" step="1">
-        </div>
-        <div style="flex:1">
-          <label>Max</label>
-          <input id="max" type="number" value="4" step="1">
-        </div>
-        <div style="flex:1">
-          <label>Step</label>
-          <input id="step" type="number" value="1" step="0.1">
-        </div>
-      </div>
+<div class="card" style="flex:1">
+<h2>Input Parameters</h2>
 
-      <button id="draw">Draw Family</button>
-      <small>If you still see nothing: open DevTools → Console and paste the console output here so I can debug.</small>
-    </div>
+<label>Inner Radius</label>
+<input id="r1" type="number" step="any" placeholder="Value">
+<select id="r1Unit">
+<option value="m">meters</option>
+<option value="cm">cm</option>
+</select>
 
-    <div class="right">
-      <div id="calculator"></div>
-      <iframe id="desmos-fallback" src="about:blank" style="display:none; width:100%; height:700px; border-radius:6px; border:1px solid #e6e6e6"></iframe>
-    </div>
-  </div>
+<label>Pipe Thickness</label>
+<input id="thickness" type="number" step="any">
+<select id="thickUnit">
+<option value="m">meters</option>
+<option value="cm">cm</option>
+</select>
+
+<label>Pipe Length (m)</label>
+<input id="length" type="number" step="any">
+
+<label>Inner Temperature (°C)</label>
+<input id="t1" type="number" step="any">
+
+<label>Outer Temperature (°C)</label>
+<input id="t2" type="number" step="any">
+
+<label>Thermal Conductivity (W/m·K)</label>
+<input id="k" type="number" step="any">
+
+<label>Time</label>
+<input id="time" type="number" step="any">
+<select id="timeUnit">
+<option value="s">seconds</option>
+<option value="min">minutes</option>
+<option value="hr">hours</option>
+</select>
+
+<button onclick="calculate()">Calculate Heat Flow</button>
+</div>
+
+<div class="card" style="flex:1">
+<h2>Pipe Visualization</h2>
+<div class="pipe"></div>
+<p style="text-align:center">Red → Hot | Grey → Cold</p>
+
+<h2>Temperature Distribution</h2>
+<canvas id="graph" width="400" height="250"></canvas>
+</div>
+
+</section>
+
+<section class="card">
+<h2>Results & Calculations</h2>
+<pre id="output"></pre>
+</section>
 
 <script>
-(function(){
-  const MAX_CURVES = 500;
+function calculate() {
 
-  function showFallback(){
-    console.warn('Showing Desmos iframe fallback');
-    document.getElementById('calculator').style.display = 'none';
-    const iframe = document.getElementById('desmos-fallback');
-    iframe.style.display = 'block';
-    iframe.src = 'https://www.desmos.com/calculator';
-  }
+let r1 = parseFloat(document.getElementById("r1").value);
+let thickness = parseFloat(document.getElementById("thickness").value);
+let L = parseFloat(document.getElementById("length").value);
+let T1 = parseFloat(document.getElementById("t1").value);
+let T2 = parseFloat(document.getElementById("t2").value);
+let k = parseFloat(document.getElementById("k").value);
+let time = parseFloat(document.getElementById("time").value);
 
-  // Replace whole-word occurrences of `name` with `(value)` in latex string
-  function substituteParamWholeWord(latex, name, value){
-    // escape regex special chars in name
-    const esc = name.replace(/[.*+?^${}()|[\\\]\\\\]/g, '\\\\$&');
-    // use lookarounds to ensure whole-word match (not part of other tokens)
-    const re = new RegExp('(?<![A-Za-z0-9_\\\\])' + esc + '(?![A-Za-z0-9_])', 'g');
-    return latex.replace(re, '(' + value + ')');
-  }
+if (document.getElementById("r1Unit").value === "cm") r1 /= 100;
+if (document.getElementById("thickUnit").value === "cm") thickness /= 100;
 
-  // robust integer count loop (avoid floating step loop issues)
-  function generateValues(min, max, step){
-    if(step === 0 || !isFinite(step)) return [];
-    const values = [];
-    // compute count as floor((max - min)/step) + 1, but handle negative step
-    const span = max - min;
-    const sign = step > 0 ? 1 : -1;
-    if(sign * span < 0) return []; // no values
-    const count = Math.floor(Math.abs(span) / Math.abs(step)) + 1;
-    for(let i = 0; i < count; ++i){
-      const v = min + i * step;
-      // round to avoid floating noise
-      const rv = Math.round(v * 1e12) / 1e12;
-      // ensure not exceeding max due to rounding
-      if(step > 0 && rv > max + 1e-12) break;
-      if(step < 0 && rv < max - 1e-12) break;
-      values.push(rv);
-      if(values.length > MAX_CURVES) break;
-    }
-    return values;
-  }
+if (document.getElementById("timeUnit").value === "min") time *= 60;
+if (document.getElementById("timeUnit").value === "hr") time *= 3600;
 
-  // wait for Desmos; init or fallback
-  window.addEventListener('load', function(){
-    const calcDiv = document.getElementById('calculator');
-    if(!calcDiv) { console.error('Missing #calculator element'); showFallback(); return; }
+let r2 = r1 + thickness;
 
-    function initCalc(){
-      if(typeof Desmos === 'undefined'){
-        console.warn('Desmos script not available; using fallback iframe');
-        showFallback(); return;
-      }
-      let calc;
-      try {
-        calc = Desmos.GraphingCalculator(calcDiv, {expressions:true, keypad:false});
-      } catch(e){
-        console.error('Failed to initialize Desmos:', e);
-        showFallback(); return;
-      }
+// Fourier’s Law for cylindrical pipe
+let Q = (2 * Math.PI * k * L * (T1 - T2)) / Math.log(r2 / r1);
+let heat = Q * time;
 
-      // set nice bounds
-      try { calc.setMathBounds({left:-30, right:130, bottom:-50, top:50}); } catch(e){}
+document.getElementById("output").textContent =
+`Fourier’s Law:
+Q = (2πkL(T₁ − T₂)) / ln(r₂/r₁)
 
-      document.getElementById('draw').onclick = function(){
-        try {
-          const raw = document.getElementById('eq').value.trim();
-          if(!raw){ alert('Enter an equation'); return; }
-          const param = document.getElementById('param').value.trim();
-          if(!param){ alert('Enter a parameter name (eg c or k)'); return; }
-          if(!raw.includes(param)){
-            const ok = confirm("Equation doesn't contain the parameter '"+param+"'. Continue and plot equation as-is?");
-            if(!ok) return;
-          }
-          const min = parseFloat(document.getElementById('min').value);
-          const max = parseFloat(document.getElementById('max').value);
-          let step = parseFloat(document.getElementById('step').value);
-          if(!isFinite(step) || step === 0) step = 1;
+r₁ = ${r1.toFixed(4)} m
+r₂ = ${r2.toFixed(4)} m
+k  = ${k} W/m·K
+L  = ${L} m
+ΔT = ${T1 - T2} °C
 
-          const values = generateValues(min, max, step);
-          if(values.length === 0){
-            alert('Parameter value list empty. Check min/max/step.');
-            return;
-          }
-          if(values.length > MAX_CURVES){
-            alert('Too many curves ('+values.length+'). Increase step or reduce range. Max '+MAX_CURVES);
-            return;
-          }
+Heat Flow Rate (Q) = ${Q.toFixed(3)} W
+Total Heat Transferred = ${heat.toFixed(3)} J`;
 
-          // prepare expressions by substituting numeric values
-          const exprs = [];
-          for(let i=0;i<values.length;i++){
-            const v = values[i];
-            const substituted = substituteParamWholeWord(raw, param, v);
-            // final sanity: ensure substitution happened if param existed in string
-            exprs.push({ id: 'curve_'+i, latex: substituted, color: (i%4===0?Desmos.Colors.BLUE:(i%4===1?Desmos.Colors.PURPLE:(i%4===2?Desmos.Colors.RED:Desmos.Colors.ORANGE))) });
-          }
+drawGraph(r1, r2, T1, T2);
+}
 
-          console.log('[family] clearing and setting '+exprs.length+' curves');
-          calc.setExpressions([]); // clear
-          calc.setExpressions(exprs);
+function drawGraph(r1, r2, T1, T2) {
+let canvas = document.getElementById("graph");
+let ctx = canvas.getContext("2d");
+ctx.clearRect(0,0,400,250);
 
-          alert('Plotted '+exprs.length+' curves for '+param+' from '+min+' to '+max+' step '+step);
-        } catch(err){
-          console.error('Draw error', err);
-          alert('Error while drawing. Check browser console for details.');
-        }
-      }; // draw onclick
+ctx.strokeStyle = "black";
+ctx.beginPath();
+ctx.moveTo(40,20);
+ctx.lineTo(40,220);
+ctx.lineTo(380,220);
+ctx.stroke();
 
-      console.log('Desmos initialized and Draw handler attached');
-    } // initCalc
-
-    // wait a bit for Desmos script to load (defer)
-    if(typeof Desmos === 'undefined'){
-      setTimeout(function(){
-        if(typeof Desmos === 'undefined'){
-          console.warn('Desmos still undefined after wait => fallback');
-          showFallback();
-        } else initCalc();
-      }, 700);
-    } else {
-      initCalc();
-    }
-  }); // load
-})();
+ctx.strokeStyle = "red";
+ctx.beginPath();
+for (let i = 0; i <= 100; i++) {
+let r = r1 + (r2 - r1) * (i / 100);
+let T = T1 - (T1 - T2) * Math.log(r / r1) / Math.log(r2 / r1);
+let x = 40 + i * 3.4;
+let y = 220 - ((T - T2) / (T1 - T2)) * 180;
+if (i === 0) ctx.moveTo(x,y);
+else ctx.lineTo(x,y);
+}
+ctx.stroke();
+}
 </script>
+
 </body>
 </html>
