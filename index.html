@@ -9,68 +9,25 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0f172a;
-    color: #e5e7eb;
-}
-header {
-    background: #020617;
-    padding: 20px;
-    text-align: center;
-}
-section {
-    padding: 20px;
-    max-width: 1200px;
-    margin: auto;
-}
-.card {
-    background: #020617;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-label {
-    margin-top: 10px;
-    display: block;
-}
+body { margin:0; font-family:Arial; background:#0f172a; color:#e5e7eb; }
+header { background:#020617; padding:20px; text-align:center; }
+section { padding:20px; max-width:1200px; margin:auto; }
+.card { background:#020617; padding:20px; border-radius:10px; margin-bottom:20px; }
+label { display:block; margin-top:10px; }
 input, select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    background: #020617;
-    color: white;
-    border: 1px solid #334155;
-    border-radius: 5px;
+    width:100%; padding:8px; margin-top:5px;
+    background:#020617; color:white;
+    border:1px solid #334155; border-radius:5px;
 }
 button {
-    margin-top: 15px;
-    padding: 12px;
-    width: 100%;
-    background: #2563eb;
-    border: none;
-    color: white;
-    font-size: 16px;
-    border-radius: 6px;
-    cursor: pointer;
+    margin-top:15px; padding:12px; width:100%;
+    background:#2563eb; border:none; color:white;
+    font-size:16px; border-radius:6px; cursor:pointer;
 }
-.flex {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-canvas {
-    background: white;
-    border-radius: 8px;
-}
-#scene {
-    width: 100%;
-    height: 300px;
-}
-pre {
-    white-space: pre-wrap;
-}
+.flex { display:flex; gap:20px; flex-wrap:wrap; }
+#scene { width:100%; height:300px; }
+canvas { background:white; border-radius:8px; }
+pre { white-space:pre-wrap; }
 </style>
 </head>
 
@@ -78,30 +35,23 @@ pre {
 
 <header>
 <h1>Fourier’s Law – Heat Conduction in Pipe</h1>
-<p>Interactive 3D & Graphical Calculator</p>
 </header>
 
 <section class="flex">
 
 <div class="card" style="flex:1">
-<h2>Input Parameters</h2>
+<h2>Inputs</h2>
 
 <label>Inner Radius</label>
-<input id="r1" type="number" step="any">
-<select id="r1Unit">
-<option value="m">meters</option>
-<option value="cm">cm</option>
-</select>
+<input id="r1" type="number">
+<select id="r1Unit"><option value="m">m</option><option value="cm">cm</option></select>
 
-<label>Pipe Thickness</label>
-<input id="thick" type="number" step="any">
-<select id="thickUnit">
-<option value="m">meters</option>
-<option value="cm">cm</option>
-</select>
+<label>Thickness</label>
+<input id="thick" type="number">
+<select id="thickUnit"><option value="m">m</option><option value="cm">cm</option></select>
 
 <label>Pipe Length (m)</label>
-<input id="L" type="number" step="any">
+<input id="L" type="number">
 
 <label>Inner Temperature (°C)</label>
 <input id="T1" type="number">
@@ -124,10 +74,10 @@ pre {
 </div>
 
 <div class="card" style="flex:1">
-<h2>3D Pipe Model</h2>
+<h2>3D Pipe</h2>
 <div id="scene"></div>
 
-<h2>Temperature Distribution</h2>
+<h2>Temperature vs Radius</h2>
 <canvas id="graph" width="420" height="260"></canvas>
 </div>
 
@@ -138,123 +88,101 @@ pre {
 <pre id="output"></pre>
 </section>
 
-<section class="card">
-<h2>How to Use</h2>
-<p>
-1. Enter pipe dimensions and temperatures.<br>
-2. Choose correct units (cm or m).<br>
-3. Click <b>Calculate</b>.<br>
-4. Rotate the 3D pipe using mouse drag.<br>
-5. Observe temperature variation from pipe center in graph.
-</p>
-
-<h2>What This Tool Uses</h2>
-<p>
-This tool uses <b>Fourier’s Law of Heat Conduction</b> for a hollow cylindrical pipe
-under <b>steady-state conditions</b>. Heat transfer is assumed to be purely radial.
-</p>
-</section>
-
 <script>
-let scene, camera, renderer, controls, pipeMesh;
+/* ---------- THREE.JS SETUP ---------- */
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera.position.set(0,2,4);
 
-function init3D() {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, sceneDiv.clientWidth/300, 0.1, 100);
-    camera.position.set(0, 2, 4);
+let renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(sceneDiv = document.getElementById("scene").clientWidth, 300);
+sceneDiv.appendChild(renderer.domElement);
 
-    renderer = new THREE.WebGLRenderer({antialias:true});
-    renderer.setSize(sceneDiv.clientWidth, 300);
-    sceneDiv.innerHTML = "";
-    sceneDiv.appendChild(renderer.domElement);
+let controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+scene.add(new THREE.AmbientLight(0xffffff,0.6));
+let light = new THREE.DirectionalLight(0xffffff,0.8);
+light.position.set(5,5,5);
+scene.add(light);
 
-    let light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(5,5,5);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0x404040));
+let outerPipe, innerPipe;
 
-    animate();
-}
-
-function updatePipe(r1, r2) {
-    if (pipeMesh) scene.remove(pipeMesh);
-
-    let geometry = new THREE.CylinderGeometry(r2, r2, 2, 64, 1, true);
-    let hole = new THREE.CylinderGeometry(r1, r1, 2.01, 64);
-    geometry = THREE.BufferGeometryUtils ?
-        THREE.BufferGeometryUtils.subtract(geometry, hole) : geometry;
-
-    let material = new THREE.MeshStandardMaterial({
-        color: 0x64748b,
-        side: THREE.DoubleSide
-    });
-
-    pipeMesh = new THREE.Mesh(geometry, material);
-    scene.add(pipeMesh);
-}
-
-function animate() {
+function animate(){
     requestAnimationFrame(animate);
-    renderer.render(scene, camera);
+    renderer.render(scene,camera);
 }
+animate();
 
-const sceneDiv = document.getElementById("scene");
-init3D();
+/* ---------- CALCULATION ---------- */
+function calculate(){
 
-function calculate() {
-    let r1 = +r1Input.value;
-    let thick = +thickInput.value;
-    let L = +LInput.value;
-    let T1 = +T1Input.value;
-    let T2 = +T2Input.value;
-    let k = +kInput.value;
-    let time = +timeInput.value;
+    let r1 = parseFloat(document.getElementById("r1").value);
+    let thick = parseFloat(document.getElementById("thick").value);
+    let L = parseFloat(document.getElementById("L").value);
+    let T1 = parseFloat(document.getElementById("T1").value);
+    let T2 = parseFloat(document.getElementById("T2").value);
+    let k = parseFloat(document.getElementById("k").value);
+    let time = parseFloat(document.getElementById("time").value);
 
-    if (r1Unit.value === "cm") r1 /= 100;
-    if (thickUnit.value === "cm") thick /= 100;
-    if (timeUnit.value === "min") time *= 60;
-    if (timeUnit.value === "hr") time *= 3600;
+    if(document.getElementById("r1Unit").value==="cm") r1/=100;
+    if(document.getElementById("thickUnit").value==="cm") thick/=100;
+    if(document.getElementById("timeUnit").value==="min") time*=60;
+    if(document.getElementById("timeUnit").value==="hr") time*=3600;
 
     let r2 = r1 + thick;
 
     let Q = (2*Math.PI*k*L*(T1-T2))/Math.log(r2/r1);
-    let heat = Q * time;
+    let heat = Q*time;
 
-    output.textContent =
+    document.getElementById("output").textContent =
 `Heat Flow Rate Q = ${Q.toFixed(3)} W
 Total Heat Transfer = ${heat.toFixed(3)} J`;
 
-    updatePipe(r1, r2);
-    drawGraph(r1, r2, T1, T2);
+    drawPipe(r1,r2);
+    drawGraph(r1,r2,T1,T2);
 }
 
-function drawGraph(r1, r2, T1, T2) {
-    let ctx = graph.getContext("2d");
+/* ---------- PIPE ---------- */
+function drawPipe(r1,r2){
+    if(outerPipe) scene.remove(outerPipe);
+    if(innerPipe) scene.remove(innerPipe);
+
+    outerPipe = new THREE.Mesh(
+        new THREE.CylinderGeometry(r2,r2,2,64,true),
+        new THREE.MeshStandardMaterial({color:0x64748b,side:THREE.DoubleSide})
+    );
+
+    innerPipe = new THREE.Mesh(
+        new THREE.CylinderGeometry(r1,r1,2.05,64,true),
+        new THREE.MeshStandardMaterial({color:0x020617,side:THREE.DoubleSide})
+    );
+
+    scene.add(outerPipe);
+    scene.add(innerPipe);
+}
+
+/* ---------- GRAPH ---------- */
+function drawGraph(r1,r2,T1,T2){
+    let ctx = document.getElementById("graph").getContext("2d");
     ctx.clearRect(0,0,420,260);
 
-    ctx.fillStyle = "black";
-    ctx.fillText("Distance from center (m)", 120, 250);
-    ctx.save();
-    ctx.rotate(-Math.PI/2);
-    ctx.fillText("Temperature (°C)", -170, 15);
-    ctx.restore();
-
+    ctx.strokeStyle="black";
     ctx.beginPath();
-    ctx.moveTo(40,20);
-    ctx.lineTo(40,220);
-    ctx.lineTo(400,220);
+    ctx.moveTo(40,20); ctx.lineTo(40,220); ctx.lineTo(400,220);
     ctx.stroke();
 
-    ctx.strokeStyle = "red";
+    ctx.fillText("Distance from center (m)",120,250);
+    ctx.save(); ctx.rotate(-Math.PI/2);
+    ctx.fillText("Temperature (°C)",-170,15); ctx.restore();
+
+    ctx.strokeStyle="red";
     ctx.beginPath();
-    for (let i=0;i<=100;i++){
-        let r = r1 + (r2-r1)*i/100;
-        let T = T1-(T1-T2)*Math.log(r/r1)/Math.log(r2/r1);
-        let x = 40 + i*3.6;
-        let y = 220 - (T-T2)/(T1-T2)*180;
-        i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    for(let i=0;i<=100;i++){
+        let r=r1+(r2-r1)*i/100;
+        let T=T1-(T1-T2)*Math.log(r/r1)/Math.log(r2/r1);
+        let x=40+i*3.6;
+        let y=220-(T-T2)/(T1-T2)*180;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
     }
     ctx.stroke();
 }
