@@ -2,190 +2,244 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Heat Flow in Pipe – Fourier’s Law</title>
+<title>Fourier’s Law Heat Flow Calculator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body { margin:0; font-family:Arial; background:#0f172a; color:#e5e7eb; }
-header { background:#020617; padding:20px; text-align:center; }
-section { padding:20px; max-width:1200px; margin:auto; }
-.card { background:#020617; padding:20px; border-radius:10px; margin-bottom:20px; }
-label { display:block; margin-top:10px; }
-input, select {
-    width:100%; padding:8px; margin-top:5px;
-    background:#020617; color:white;
-    border:1px solid #334155; border-radius:5px;
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f8fc;
+    color: #222;
+}
+header {
+    background: #0b5ed7;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-size: 22px;
+}
+.container {
+    display: grid;
+    grid-template-columns: 1fr 2fr 2fr;
+    gap: 10px;
+    padding: 10px;
+}
+.panel {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+}
+input, select, button {
+    width: 100%;
+    padding: 6px;
+    margin: 5px 0;
 }
 button {
-    margin-top:15px; padding:12px; width:100%;
-    background:#2563eb; border:none; color:white;
-    font-size:16px; border-radius:6px; cursor:pointer;
+    background: #fd7e14;
+    border: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
 }
-.flex { display:flex; gap:20px; flex-wrap:wrap; }
-#scene { width:100%; height:300px; }
-canvas { background:white; border-radius:8px; }
-pre { white-space:pre-wrap; }
+button:hover {
+    background: #e36b0a;
+}
+canvas {
+    background: #fff;
+}
+.result {
+    font-size: 15px;
+    margin-top: 8px;
+}
+h3 {
+    margin-top: 0;
+}
+.small {
+    font-size: 13px;
+    color: #555;
+}
 </style>
 </head>
 
 <body>
 
-<header>
-<h1>Fourier’s Law – Heat Conduction in Pipe</h1>
-</header>
+<header>Fourier’s Law Heat Flow Calculator (Cylindrical Pipe)</header>
 
-<section class="flex">
+<div class="container">
 
-<div class="card" style="flex:1">
-<h2>Inputs</h2>
+<!-- INPUT PANEL -->
+<div class="panel">
+<h3>Input Parameters</h3>
 
-<label>Inner Radius</label>
-<input id="r1" type="number">
-<select id="r1Unit"><option value="m">m</option><option value="cm">cm</option></select>
+Inner Radius:
+<input id="r1" type="number" value="5">
+<select id="r1unit"><option value="0.01">cm</option><option value="1">m</option></select>
 
-<label>Thickness</label>
-<input id="thick" type="number">
-<select id="thickUnit"><option value="m">m</option><option value="cm">cm</option></select>
+Outer Radius:
+<input id="r2" type="number" value="7">
+<select id="r2unit"><option value="0.01">cm</option><option value="1">m</option></select>
 
-<label>Pipe Length (m)</label>
-<input id="L" type="number">
+Inner Temperature (°C):
+<input id="T1" type="number" value="200">
 
-<label>Inner Temperature (°C)</label>
-<input id="T1" type="number">
+Outer Temperature (°C):
+<input id="T2" type="number" value="50">
 
-<label>Outer Temperature (°C)</label>
-<input id="T2" type="number">
+Thermal Conductivity (W/m·K):
+<input id="k" type="number" value="45">
 
-<label>Thermal Conductivity (W/m·K)</label>
-<input id="k" type="number">
+Pipe Length:
+<input id="L" type="number" value="1">
+<select id="Lunit"><option value="1">m</option><option value="0.01">cm</option></select>
 
-<label>Time</label>
-<input id="time" type="number">
-<select id="timeUnit">
-<option value="s">seconds</option>
-<option value="min">minutes</option>
-<option value="hr">hours</option>
+Time Duration (seconds):
+<input id="time" type="number" value="60">
+
+Output Unit:
+<select id="outunit">
+<option value="W">Watt</option>
+<option value="cal">cal/sec</option>
 </select>
 
 <button onclick="calculate()">Calculate</button>
+<button onclick="resetAll()">Reset</button>
+
 </div>
 
-<div class="card" style="flex:1">
-<h2>3D Pipe</h2>
-<div id="scene"></div>
-
-<h2>Temperature vs Radius</h2>
-<canvas id="graph" width="420" height="260"></canvas>
+<!-- 3D VIEW -->
+<div class="panel">
+<h3>3D Pipe Visualization</h3>
+<div id="threeContainer" style="height:350px;"></div>
+<p class="small">Rotate & zoom using mouse</p>
 </div>
 
-</section>
+<!-- RESULTS -->
+<div class="panel">
+<h3>Results</h3>
+<div id="results" class="result"></div>
 
-<section class="card">
-<h2>Results</h2>
-<pre id="output"></pre>
-</section>
+<h4>Temperature Distribution</h4>
+<canvas id="tempChart"></canvas>
+
+<h4>Heat Flow vs Time</h4>
+<canvas id="timeChart"></canvas>
+</div>
+
+</div>
+
+<div class="panel" style="margin:10px;">
+<h3>How to Use This Tool</h3>
+<ul>
+<li>Enter inner & outer radius of the pipe</li>
+<li>Provide inner and outer temperatures</li>
+<li>Select thermal conductivity of material</li>
+<li>Click <b>Calculate</b> to view heat flow</li>
+<li>3D model updates automatically</li>
+</ul>
+</div>
 
 <script>
-/* ---------- THREE.JS SETUP ---------- */
-let scene = new THREE.Scene();
-let camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-camera.position.set(0,2,4);
+let scene, camera, renderer, controls, pipe;
 
-let renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(sceneDiv = document.getElementById("scene").clientWidth, 300);
-sceneDiv.appendChild(renderer.domElement);
+function init3D() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(350,350);
+    document.getElementById("threeContainer").appendChild(renderer.domElement);
 
-let controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    camera.position.z = 15;
 
-scene.add(new THREE.AmbientLight(0xffffff,0.6));
-let light = new THREE.DirectionalLight(0xffffff,0.8);
-light.position.set(5,5,5);
-scene.add(light);
+    const light = new THREE.PointLight(0xffffff,1);
+    light.position.set(10,10,10);
+    scene.add(light);
 
-let outerPipe, innerPipe;
-
-function animate(){
+    animate();
+}
+function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene,camera);
 }
-animate();
 
-/* ---------- CALCULATION ---------- */
-function calculate(){
-
-    let r1 = parseFloat(document.getElementById("r1").value);
-    let thick = parseFloat(document.getElementById("thick").value);
-    let L = parseFloat(document.getElementById("L").value);
-    let T1 = parseFloat(document.getElementById("T1").value);
-    let T2 = parseFloat(document.getElementById("T2").value);
-    let k = parseFloat(document.getElementById("k").value);
-    let time = parseFloat(document.getElementById("time").value);
-
-    if(document.getElementById("r1Unit").value==="cm") r1/=100;
-    if(document.getElementById("thickUnit").value==="cm") thick/=100;
-    if(document.getElementById("timeUnit").value==="min") time*=60;
-    if(document.getElementById("timeUnit").value==="hr") time*=3600;
-
-    let r2 = r1 + thick;
-
-    let Q = (2*Math.PI*k*L*(T1-T2))/Math.log(r2/r1);
-    let heat = Q*time;
-
-    document.getElementById("output").textContent =
-`Heat Flow Rate Q = ${Q.toFixed(3)} W
-Total Heat Transfer = ${heat.toFixed(3)} J`;
-
-    drawPipe(r1,r2);
-    drawGraph(r1,r2,T1,T2);
+function drawPipe(r1,r2,L) {
+    if(pipe) scene.remove(pipe);
+    const geometry = new THREE.CylinderGeometry(r2,r2,L,64,1,true);
+    const material = new THREE.MeshStandardMaterial({
+        color: 0xff4500,
+        side: THREE.DoubleSide
+    });
+    pipe = new THREE.Mesh(geometry, material);
+    scene.add(pipe);
 }
 
-/* ---------- PIPE ---------- */
-function drawPipe(r1,r2){
-    if(outerPipe) scene.remove(outerPipe);
-    if(innerPipe) scene.remove(innerPipe);
+let tempChart, timeChart;
 
-    outerPipe = new THREE.Mesh(
-        new THREE.CylinderGeometry(r2,r2,2,64,true),
-        new THREE.MeshStandardMaterial({color:0x64748b,side:THREE.DoubleSide})
-    );
+function calculate() {
+    const r1 = document.getElementById("r1").value * document.getElementById("r1unit").value;
+    const r2 = document.getElementById("r2").value * document.getElementById("r2unit").value;
+    const T1 = Number(document.getElementById("T1").value);
+    const T2 = Number(document.getElementById("T2").value);
+    const k = Number(document.getElementById("k").value);
+    const L = document.getElementById("L").value * document.getElementById("Lunit").value;
+    const time = Number(document.getElementById("time").value);
+    const unit = document.getElementById("outunit").value;
 
-    innerPipe = new THREE.Mesh(
-        new THREE.CylinderGeometry(r1,r1,2.05,64,true),
-        new THREE.MeshStandardMaterial({color:0x020617,side:THREE.DoubleSide})
-    );
+    const Q = (2*Math.PI*k*L*(T1-T2))/Math.log(r2/r1);
+    let Qout = Q;
+    let unitLabel = "W";
 
-    scene.add(outerPipe);
-    scene.add(innerPipe);
-}
-
-/* ---------- GRAPH ---------- */
-function drawGraph(r1,r2,T1,T2){
-    let ctx = document.getElementById("graph").getContext("2d");
-    ctx.clearRect(0,0,420,260);
-
-    ctx.strokeStyle="black";
-    ctx.beginPath();
-    ctx.moveTo(40,20); ctx.lineTo(40,220); ctx.lineTo(400,220);
-    ctx.stroke();
-
-    ctx.fillText("Distance from center (m)",120,250);
-    ctx.save(); ctx.rotate(-Math.PI/2);
-    ctx.fillText("Temperature (°C)",-170,15); ctx.restore();
-
-    ctx.strokeStyle="red";
-    ctx.beginPath();
-    for(let i=0;i<=100;i++){
-        let r=r1+(r2-r1)*i/100;
-        let T=T1-(T1-T2)*Math.log(r/r1)/Math.log(r2/r1);
-        let x=40+i*3.6;
-        let y=220-(T-T2)/(T1-T2)*180;
-        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    if(unit === "cal") {
+        Qout = Q/4.186;
+        unitLabel = "cal/sec";
     }
-    ctx.stroke();
+
+    document.getElementById("results").innerHTML = `
+<b>Heat Flow Rate:</b> ${Qout.toFixed(3)} ${unitLabel}<br>
+<b>Total Heat Transferred:</b> ${(Qout*time).toFixed(3)} ${unitLabel.replace("/sec","")}<br><br>
+<b>Formula Used:</b><br>
+Q = 2πkL(T₁−T₂) / ln(r₂/r₁)
+`;
+
+    drawPipe(r1*5,r2*5,L*5);
+
+    const rvals=[], tvals=[];
+    for(let i=0;i<=20;i++){
+        const r = r1 + (r2-r1)*i/20;
+        const T = T1 - (T1-T2)*Math.log(r/r1)/Math.log(r2/r1);
+        rvals.push(r.toFixed(3));
+        tvals.push(T.toFixed(2));
+    }
+
+    if(tempChart) tempChart.destroy();
+    tempChart = new Chart(document.getElementById("tempChart"), {
+        type:'line',
+        data:{labels:rvals, datasets:[{label:'Temperature (°C)', data:tvals}]}
+    });
+
+    const t=[], q=[];
+    for(let i=0;i<=10;i++){
+        t.push(i*time/10);
+        q.push(Qout);
+    }
+    if(timeChart) timeChart.destroy();
+    timeChart = new Chart(document.getElementById("timeChart"), {
+        type:'line',
+        data:{labels:t, datasets:[{label:'Heat Flow', data:q}]}
+    });
 }
+
+function resetAll(){
+    document.getElementById("results").innerHTML="";
+}
+
+init3D();
 </script>
 
 </body>
