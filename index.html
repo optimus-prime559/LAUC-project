@@ -2,41 +2,39 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Fourier’s Law – Heat Flow in Pipe</title>
+<title>Heat Flow in Pipe – Fourier’s Law</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
 
 <style>
 body {
-    font-family: Arial, sans-serif;
     margin: 0;
+    font-family: Arial, sans-serif;
     background: #0f172a;
     color: #e5e7eb;
 }
-
 header {
     background: #020617;
     padding: 20px;
     text-align: center;
 }
-
 section {
     padding: 20px;
     max-width: 1200px;
     margin: auto;
 }
-
 .card {
     background: #020617;
-    border-radius: 10px;
     padding: 20px;
+    border-radius: 10px;
     margin-bottom: 20px;
 }
-
 label {
-    display: block;
     margin-top: 10px;
+    display: block;
 }
-
 input, select {
     width: 100%;
     padding: 8px;
@@ -46,9 +44,8 @@ input, select {
     border: 1px solid #334155;
     border-radius: 5px;
 }
-
 button {
-    margin-top: 20px;
+    margin-top: 15px;
     padding: 12px;
     width: 100%;
     background: #2563eb;
@@ -58,34 +55,21 @@ button {
     border-radius: 6px;
     cursor: pointer;
 }
-
-button:hover {
-    background: #1d4ed8;
-}
-
 .flex {
     display: flex;
     gap: 20px;
     flex-wrap: wrap;
 }
-
 canvas {
     background: white;
     border-radius: 8px;
 }
-
-.pipe {
-    width: 200px;
-    height: 200px;
-    margin: auto;
-    border-radius: 50%;
-    background:
-        radial-gradient(circle at center,
-        #ef4444 0%,
-        #ef4444 35%,
-        #f97316 36%,
-        #f97316 60%,
-        #64748b 61%);
+#scene {
+    width: 100%;
+    height: 300px;
+}
+pre {
+    white-space: pre-wrap;
 }
 </style>
 </head>
@@ -93,8 +77,8 @@ canvas {
 <body>
 
 <header>
-<h1>Fourier’s Law – Heat Flow in Cylindrical Pipe</h1>
-<p>Steady-state conduction | Engineering Calculator</p>
+<h1>Fourier’s Law – Heat Conduction in Pipe</h1>
+<p>Interactive 3D & Graphical Calculator</p>
 </header>
 
 <section class="flex">
@@ -103,120 +87,176 @@ canvas {
 <h2>Input Parameters</h2>
 
 <label>Inner Radius</label>
-<input id="r1" type="number" step="any" placeholder="Value">
+<input id="r1" type="number" step="any">
 <select id="r1Unit">
 <option value="m">meters</option>
 <option value="cm">cm</option>
 </select>
 
 <label>Pipe Thickness</label>
-<input id="thickness" type="number" step="any">
+<input id="thick" type="number" step="any">
 <select id="thickUnit">
 <option value="m">meters</option>
 <option value="cm">cm</option>
 </select>
 
 <label>Pipe Length (m)</label>
-<input id="length" type="number" step="any">
+<input id="L" type="number" step="any">
 
 <label>Inner Temperature (°C)</label>
-<input id="t1" type="number" step="any">
+<input id="T1" type="number">
 
 <label>Outer Temperature (°C)</label>
-<input id="t2" type="number" step="any">
+<input id="T2" type="number">
 
 <label>Thermal Conductivity (W/m·K)</label>
-<input id="k" type="number" step="any">
+<input id="k" type="number">
 
 <label>Time</label>
-<input id="time" type="number" step="any">
+<input id="time" type="number">
 <select id="timeUnit">
 <option value="s">seconds</option>
 <option value="min">minutes</option>
 <option value="hr">hours</option>
 </select>
 
-<button onclick="calculate()">Calculate Heat Flow</button>
+<button onclick="calculate()">Calculate</button>
 </div>
 
 <div class="card" style="flex:1">
-<h2>Pipe Visualization</h2>
-<div class="pipe"></div>
-<p style="text-align:center">Red → Hot | Grey → Cold</p>
+<h2>3D Pipe Model</h2>
+<div id="scene"></div>
 
 <h2>Temperature Distribution</h2>
-<canvas id="graph" width="400" height="250"></canvas>
+<canvas id="graph" width="420" height="260"></canvas>
 </div>
 
 </section>
 
 <section class="card">
-<h2>Results & Calculations</h2>
+<h2>Results</h2>
 <pre id="output"></pre>
 </section>
 
+<section class="card">
+<h2>How to Use</h2>
+<p>
+1. Enter pipe dimensions and temperatures.<br>
+2. Choose correct units (cm or m).<br>
+3. Click <b>Calculate</b>.<br>
+4. Rotate the 3D pipe using mouse drag.<br>
+5. Observe temperature variation from pipe center in graph.
+</p>
+
+<h2>What This Tool Uses</h2>
+<p>
+This tool uses <b>Fourier’s Law of Heat Conduction</b> for a hollow cylindrical pipe
+under <b>steady-state conditions</b>. Heat transfer is assumed to be purely radial.
+</p>
+</section>
+
 <script>
+let scene, camera, renderer, controls, pipeMesh;
+
+function init3D() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(45, sceneDiv.clientWidth/300, 0.1, 100);
+    camera.position.set(0, 2, 4);
+
+    renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(sceneDiv.clientWidth, 300);
+    sceneDiv.innerHTML = "";
+    sceneDiv.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    let light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5,5,5);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    animate();
+}
+
+function updatePipe(r1, r2) {
+    if (pipeMesh) scene.remove(pipeMesh);
+
+    let geometry = new THREE.CylinderGeometry(r2, r2, 2, 64, 1, true);
+    let hole = new THREE.CylinderGeometry(r1, r1, 2.01, 64);
+    geometry = THREE.BufferGeometryUtils ?
+        THREE.BufferGeometryUtils.subtract(geometry, hole) : geometry;
+
+    let material = new THREE.MeshStandardMaterial({
+        color: 0x64748b,
+        side: THREE.DoubleSide
+    });
+
+    pipeMesh = new THREE.Mesh(geometry, material);
+    scene.add(pipeMesh);
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+
+const sceneDiv = document.getElementById("scene");
+init3D();
+
 function calculate() {
+    let r1 = +r1Input.value;
+    let thick = +thickInput.value;
+    let L = +LInput.value;
+    let T1 = +T1Input.value;
+    let T2 = +T2Input.value;
+    let k = +kInput.value;
+    let time = +timeInput.value;
 
-let r1 = parseFloat(document.getElementById("r1").value);
-let thickness = parseFloat(document.getElementById("thickness").value);
-let L = parseFloat(document.getElementById("length").value);
-let T1 = parseFloat(document.getElementById("t1").value);
-let T2 = parseFloat(document.getElementById("t2").value);
-let k = parseFloat(document.getElementById("k").value);
-let time = parseFloat(document.getElementById("time").value);
+    if (r1Unit.value === "cm") r1 /= 100;
+    if (thickUnit.value === "cm") thick /= 100;
+    if (timeUnit.value === "min") time *= 60;
+    if (timeUnit.value === "hr") time *= 3600;
 
-if (document.getElementById("r1Unit").value === "cm") r1 /= 100;
-if (document.getElementById("thickUnit").value === "cm") thickness /= 100;
+    let r2 = r1 + thick;
 
-if (document.getElementById("timeUnit").value === "min") time *= 60;
-if (document.getElementById("timeUnit").value === "hr") time *= 3600;
+    let Q = (2*Math.PI*k*L*(T1-T2))/Math.log(r2/r1);
+    let heat = Q * time;
 
-let r2 = r1 + thickness;
+    output.textContent =
+`Heat Flow Rate Q = ${Q.toFixed(3)} W
+Total Heat Transfer = ${heat.toFixed(3)} J`;
 
-// Fourier’s Law for cylindrical pipe
-let Q = (2 * Math.PI * k * L * (T1 - T2)) / Math.log(r2 / r1);
-let heat = Q * time;
-
-document.getElementById("output").textContent =
-`Fourier’s Law:
-Q = (2πkL(T₁ − T₂)) / ln(r₂/r₁)
-
-r₁ = ${r1.toFixed(4)} m
-r₂ = ${r2.toFixed(4)} m
-k  = ${k} W/m·K
-L  = ${L} m
-ΔT = ${T1 - T2} °C
-
-Heat Flow Rate (Q) = ${Q.toFixed(3)} W
-Total Heat Transferred = ${heat.toFixed(3)} J`;
-
-drawGraph(r1, r2, T1, T2);
+    updatePipe(r1, r2);
+    drawGraph(r1, r2, T1, T2);
 }
 
 function drawGraph(r1, r2, T1, T2) {
-let canvas = document.getElementById("graph");
-let ctx = canvas.getContext("2d");
-ctx.clearRect(0,0,400,250);
+    let ctx = graph.getContext("2d");
+    ctx.clearRect(0,0,420,260);
 
-ctx.strokeStyle = "black";
-ctx.beginPath();
-ctx.moveTo(40,20);
-ctx.lineTo(40,220);
-ctx.lineTo(380,220);
-ctx.stroke();
+    ctx.fillStyle = "black";
+    ctx.fillText("Distance from center (m)", 120, 250);
+    ctx.save();
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText("Temperature (°C)", -170, 15);
+    ctx.restore();
 
-ctx.strokeStyle = "red";
-ctx.beginPath();
-for (let i = 0; i <= 100; i++) {
-let r = r1 + (r2 - r1) * (i / 100);
-let T = T1 - (T1 - T2) * Math.log(r / r1) / Math.log(r2 / r1);
-let x = 40 + i * 3.4;
-let y = 220 - ((T - T2) / (T1 - T2)) * 180;
-if (i === 0) ctx.moveTo(x,y);
-else ctx.lineTo(x,y);
-}
-ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(40,20);
+    ctx.lineTo(40,220);
+    ctx.lineTo(400,220);
+    ctx.stroke();
+
+    ctx.strokeStyle = "red";
+    ctx.beginPath();
+    for (let i=0;i<=100;i++){
+        let r = r1 + (r2-r1)*i/100;
+        let T = T1-(T1-T2)*Math.log(r/r1)/Math.log(r2/r1);
+        let x = 40 + i*3.6;
+        let y = 220 - (T-T2)/(T1-T2)*180;
+        i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
 }
 </script>
 
