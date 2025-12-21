@@ -204,7 +204,7 @@ canvas{
 <div class="panel">
 <h3>Pipe Cross-Section</h3>
 <canvas id="pipeCanvas" width="360" height="360"></canvas>
-<p class="small">Red → hot side, white → inner fluid</p>
+<p class="small">Red → hot inner surface, white → cooler outer surface</p>
 </div>
 
 <!-- RESULTS -->
@@ -233,8 +233,8 @@ function drawPipeDiagram(r1, r2){
 
     // Gradient
     const grad = ctx.createRadialGradient(cx,cy,R1,cx,cy,R2);
-    grad.addColorStop(0,"#ffffff");
-    grad.addColorStop(1,"#ff5722");
+   grad.addColorStop(0, "#ff5722");   // hot inner surface
+   grad.addColorStop(1, "#ffffff");  // cooler outer surface
 
     ctx.beginPath();
     ctx.arc(cx,cy,R2,0,2*Math.PI);
