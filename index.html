@@ -45,11 +45,20 @@ header{
 
 /* ---------- PANELS ---------- */
 .panel{
-    background:var(--panel-bg);
-    padding:16px;
-    border-radius:14px;
-    box-shadow:0 10px 22px rgba(0,0,0,0.18);
+    background:rgba(255,255,255,0.35);   /* glass */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    padding:18px;
+    border-radius:18px;
+
+    border:1px solid rgba(255,255,255,0.4);
+
+    box-shadow:
+        0 12px 30px rgba(0,0,0,0.25),
+        inset 0 1px 1px rgba(255,255,255,0.4);
 }
+
 
 /* ---------- HEADINGS ---------- */
 h3{
@@ -108,11 +117,15 @@ button:active{
 
 /* ---------- RESULT BOX ---------- */
 .result{
-    background:#e0f7fa;
-    padding:12px;
-    border-radius:10px;
-    border-left:5px solid var(--header);
-    margin-top:10px;
+    background:rgba(255,255,255,0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    padding:14px;
+    border-radius:14px;
+
+    border-left:5px solid #06b6d4;
+    box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);
 }
 
 /* ---------- CANVAS ---------- */
@@ -127,6 +140,19 @@ canvas{
     font-size:13px;
     color:#475569;
 }
+    canvas{
+    background:rgba(255,255,255,0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    border-radius:16px;
+    padding:6px;
+
+    box-shadow:
+        0 8px 20px rgba(0,0,0,0.2),
+        inset 0 1px 1px rgba(255,255,255,0.5);
+}
+
 </style>
 
 </head>
