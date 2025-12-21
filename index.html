@@ -9,74 +9,147 @@
 
 <style>
 :root{
-    --blue:#0b5ed7;
+    --cyan1:#c9f7f5;
+    --cyan2:#e6fffa;
     --orange:#fd7e14;
-    --light:#f6f9fd;
 }
+
+/* BODY */
 body{
     margin:0;
     font-family:Arial, sans-serif;
-    background:var(--light);
+    background:linear-gradient(135deg,var(--cyan1),var(--cyan2));
 }
+
+/* DARK MODE */
+body.dark{
+    background:linear-gradient(135deg,#020617,#0f172a);
+    color:#e5e7eb;
+}
+
+/* HEADER */
 header{
-    background:var(--blue);
+    background:linear-gradient(90deg,#0891b2,#06b6d4);
     color:white;
     text-align:center;
     padding:18px;
     font-size:24px;
     font-weight:bold;
+    box-shadow:0 6px 12px rgba(0,0,0,0.25);
 }
+
+/* LAYOUT */
 .container{
     display:grid;
     grid-template-columns:1fr 1.5fr 1.5fr;
-    gap:14px;
-    padding:14px;
+    gap:16px;
+    padding:16px;
 }
+
+/* PANELS */
 .panel{
-    background:white;
-    padding:14px;
-    border-radius:12px;
-    box-shadow:0 6px 14px rgba(0,0,0,0.08);
+    background:rgba(255,255,255,0.95);
+    padding:16px;
+    border-radius:14px;
+    box-shadow:0 10px 22px rgba(0,0,0,0.18);
 }
+body.dark .panel{
+    background:rgba(15,23,42,0.95);
+}
+
+/* HEADINGS */
 h3{
     margin-top:0;
-    border-bottom:2px solid #eee;
+    border-bottom:2px solid #e5e7eb;
     padding-bottom:6px;
 }
+
+/* INPUTS */
 input,select{
     width:100%;
-    padding:7px;
+    padding:8px;
     margin:6px 0;
-    border-radius:6px;
-    border:1px solid #ccc;
+    border-radius:8px;
+    border:1px solid #cbd5e1;
+    background:#f8fafc;
 }
+body.dark input, body.dark select{
+    background:#020617;
+    color:white;
+    border:1px solid #334155;
+}
+
+/* BUTTONS */
 button{
     width:100%;
-    padding:10px;
-    margin-top:8px;
+    padding:12px;
+    margin-top:10px;
     border:none;
-    border-radius:8px;
-    background:var(--orange);
+    border-radius:10px;
+    background:linear-gradient(135deg,#ff8c1a,#fd7e14);
     color:white;
     font-size:15px;
     font-weight:bold;
     cursor:pointer;
+    box-shadow:0 6px 0 #c65a0a,0 10px 18px rgba(0,0,0,0.25);
+    transition:all 0.15s ease;
+    position:relative;
+    overflow:hidden;
 }
 button:hover{
-    opacity:0.9;
+    transform:translateY(-3px);
 }
+button:active{
+    transform:translateY(2px);
+    box-shadow:0 3px 0 #c65a0a;
+}
+
+/* RIPPLE */
+.ripple{
+    position:absolute;
+    border-radius:50%;
+    transform:scale(0);
+    animation:ripple 0.6s linear;
+    background:rgba(255,255,255,0.6);
+}
+@keyframes ripple{
+    to{
+        transform:scale(4);
+        opacity:0;
+    }
+}
+
+/* RESULT BOX */
+.result-box{
+    background:#e0f2fe;
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:12px;
+    border-left:5px solid #06b6d4;
+}
+body.dark .result-box{
+    background:#020617;
+}
+
+/* CANVAS */
 canvas{
     background:white;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.12);
 }
-.small{
-    font-size:13px;
-    color:#555;
-}
-.result-box{
-    background:#f1f5fb;
-    padding:10px;
-    border-radius:8px;
-    margin-bottom:10px;
+
+/* TOGGLE */
+.toggle{
+    position:fixed;
+    top:15px;
+    right:15px;
+    background:#22d3ee;
+    color:black;
+    padding:8px 14px;
+    border-radius:20px;
+    font-weight:bold;
+    cursor:pointer;
+    box-shadow:0 4px 10px rgba(0,0,0,0.3);
 }
 </style>
 </head>
@@ -84,42 +157,40 @@ canvas{
 <body>
 
 <header>Fourier’s Law Heat Flow Calculator</header>
+<div class="toggle" onclick="toggleMode()">🌙 Dark</div>
 
 <div class="container">
 
-<!-- INPUT PANEL -->
+<!-- INPUT -->
 <div class="panel">
 <h3>Input Parameters</h3>
 
-<label>Inner Radius</label>
+Inner Radius
 <input id="r1" type="number" value="5">
 <select id="r1unit"><option value="0.01">cm</option><option value="1">m</option></select>
 
-<label>Outer Radius</label>
+Outer Radius
 <input id="r2" type="number" value="7">
 <select id="r2unit"><option value="0.01">cm</option><option value="1">m</option></select>
 
-<label>Inner Temperature (°C)</label>
+Inner Temperature (°C)
 <input id="T1" type="number" value="200">
 
-<label>Outer Temperature (°C)</label>
+Outer Temperature (°C)
 <input id="T2" type="number" value="50">
 
-<label>Thermal Conductivity (W/m·K)</label>
+Thermal Conductivity (W/m·K)
 <input id="k" type="number" value="45">
 
-<label>Pipe Length</label>
+Pipe Length
 <input id="L" type="number" value="1">
 <select id="Lunit"><option value="1">m</option><option value="0.01">cm</option></select>
 
-<label>Time (seconds)</label>
+Time (seconds)
 <input id="time" type="number" value="60">
 
-<label>Output Unit</label>
-<select id="outunit">
-<option value="W">Watt</option>
-<option value="cal">cal/sec</option>
-</select>
+Output Unit
+<select id="outunit"><option value="W">Watt</option><option value="cal">cal/sec</option></select>
 
 <button onclick="calculate()">Calculate</button>
 </div>
@@ -128,36 +199,53 @@ canvas{
 <div class="panel">
 <h3>Pipe Cross-Section</h3>
 <canvas id="pipeCanvas" width="360" height="360"></canvas>
-<p class="small">Red → hot side, white → inner fluid</p>
 </div>
 
 <!-- RESULTS -->
 <div class="panel">
 <h3>Results & Graphs</h3>
 <div id="results" class="result-box"></div>
-
-<canvas id="tempChart"></canvas>
-<br>
+<canvas id="tempChart"></canvas><br>
 <canvas id="timeChart"></canvas>
 </div>
 
 </div>
 
 <script>
-let tempChart, timeChart;
+let tempChart,timeChart,pulse=0,lastR1,lastR2;
 
-function drawPipeDiagram(r1, r2){
-    const c = document.getElementById("pipeCanvas");
-    const ctx = c.getContext("2d");
+/* DARK MODE */
+function toggleMode(){
+    document.body.classList.toggle("dark");
+}
+
+/* RIPPLE */
+document.addEventListener("click",e=>{
+    if(e.target.tagName==="BUTTON"){
+        const r=document.createElement("span");
+        r.className="ripple";
+        r.style.left=e.offsetX+"px";
+        r.style.top=e.offsetY+"px";
+        e.target.appendChild(r);
+        setTimeout(()=>r.remove(),600);
+    }
+});
+
+/* PIPE DRAW */
+function drawPipe(r1,r2){
+    lastR1=r1; lastR2=r2;
+    const c=document.getElementById("pipeCanvas");
+    const ctx=c.getContext("2d");
     ctx.clearRect(0,0,c.width,c.height);
 
-    const cx=c.width/2, cy=c.height/2;
-    const scale = 140/r2;
-    const R2=r2*scale, R1=r1*scale;
+    const cx=c.width/2,cy=c.height/2;
+    const scale=140/r2;
+    const R2=r2*scale,R1=r1*scale;
 
-    // Gradient
-    const grad = ctx.createRadialGradient(cx,cy,R1,cx,cy,R2);
+    pulse+=0.03;
+    const grad=ctx.createRadialGradient(cx,cy,R1,cx,cy,R2);
     grad.addColorStop(0,"#ffffff");
+    grad.addColorStop(0.6+0.1*Math.sin(pulse),"#ff9800");
     grad.addColorStop(1,"#ff5722");
 
     ctx.beginPath();
@@ -173,63 +261,59 @@ function drawPipeDiagram(r1, r2){
     ctx.strokeStyle="#333";
     ctx.stroke();
 
-    // Dimension arrows
-    ctx.strokeStyle="#000";
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.lineTo(cx+R1,cy);
-    ctx.moveTo(cx,cy);
-    ctx.lineTo(cx+R2,cy);
-    ctx.stroke();
-
-    ctx.font="14px Arial";
     ctx.fillStyle="#000";
-    ctx.fillText(`r₁ = ${r1.toFixed(3)} m`, cx+R1/2-20, cy-8);
-    ctx.fillText(`r₂ = ${r2.toFixed(3)} m`, cx+R2/2-20, cy+18);
+    ctx.font="14px Arial";
+    ctx.fillText(`r₁ = ${r1.toFixed(3)} m`,cx+R1/2-20,cy-8);
+    ctx.fillText(`r₂ = ${r2.toFixed(3)} m`,cx+R2/2-20,cy+20);
 }
 
+/* ANIMATION */
+function animate(){
+    if(lastR1) drawPipe(lastR1,lastR2);
+    requestAnimationFrame(animate);
+}
+animate();
+
+/* CALCULATE */
 function calculate(){
-    const r1 = r1v = document.getElementById("r1").value * document.getElementById("r1unit").value;
-    const r2 = r2v = document.getElementById("r2").value * document.getElementById("r2unit").value;
-    const T1 = +document.getElementById("T1").value;
-    const T2 = +document.getElementById("T2").value;
-    const k = +document.getElementById("k").value;
-    const L = document.getElementById("L").value * document.getElementById("Lunit").value;
-    const time = +document.getElementById("time").value;
-    const unit = document.getElementById("outunit").value;
+    const r1=document.getElementById("r1").value*document.getElementById("r1unit").value;
+    const r2=document.getElementById("r2").value*document.getElementById("r2unit").value;
+    const T1=+T1.value, T2=+T2.value;
+    const k=+k.value;
+    const L=L.value*Lunit.value;
+    const time=+timeInput.value||+document.getElementById("time").value;
+    const unit=outunit.value;
 
-    const Q = (2*Math.PI*k*L*(T1-T2))/Math.log(r2/r1);
-    const Qout = unit==="cal" ? Q/4.186 : Q;
+    const Q=(2*Math.PI*k*L*(T1-T2))/Math.log(r2/r1);
+    const Qout=unit==="cal"?Q/4.186:Q;
 
-    document.getElementById("results").innerHTML = `
+    results.innerHTML=`
 <b>Heat Flow Rate:</b> ${Qout.toFixed(4)} ${unit==="cal"?"cal/sec":"W"}<br>
-<b>Total Heat Transferred:</b> ${(Qout*time).toFixed(4)}<br><br>
+<b>Total Heat:</b> ${(Qout*time).toFixed(4)}<br>
 <b>Formula:</b> Q = 2πkL(T₁−T₂)/ln(r₂/r₁)
 `;
 
-    drawPipeDiagram(r1,r2);
+    drawPipe(r1,r2);
 
-    const r=[],T=[];
+    const rv=[],tv=[];
     for(let i=0;i<=20;i++){
-        const rv=r1+(r2-r1)*i/20;
-        r.push(rv.toFixed(4));
-        T.push((T1-(T1-T2)*Math.log(rv/r1)/Math.log(r2/r1)).toFixed(2));
+        const r=r1+(r2-r1)*i/20;
+        rv.push(r.toFixed(4));
+        tv.push((T1-(T1-T2)*Math.log(r/r1)/Math.log(r2/r1)).toFixed(2));
     }
 
     if(tempChart) tempChart.destroy();
-    tempChart=new Chart(tempChart?.canvas||document.getElementById("tempChart"),{
+    tempChart=new Chart(tempChart?.canvas||tempChart,{
         type:"line",
-        data:{labels:r,datasets:[{label:"Temperature (°C)",data:T,borderWidth:3,borderColor:"#ff5722"}]},
-        options:{scales:{x:{title:{display:true,text:"Radius (m)"}},y:{title:{display:true,text:"Temperature (°C)"}}}}
+        data:{labels:rv,datasets:[{label:"Temperature (°C)",data:tv,borderWidth:3,borderColor:"#ff5722"}]}
     });
 
     const t=[],q=[];
     for(let i=0;i<=10;i++){t.push(i*time/10);q.push(Qout);}
     if(timeChart) timeChart.destroy();
-    timeChart=new Chart(timeChart?.canvas||document.getElementById("timeChart"),{
+    timeChart=new Chart(timeChart?.canvas||timeChart,{
         type:"line",
-        data:{labels:t,datasets:[{label:"Heat Flow",data:q,borderWidth:3,borderColor:"#0b5ed7"}]},
-        options:{scales:{x:{title:{display:true,text:"Time (s)"}},y:{title:{display:true,text:"Heat Flow"}}}}
+        data:{labels:t,datasets:[{label:"Heat Flow",data:q,borderWidth:3,borderColor:"#06b6d4"}]}
     });
 }
 </script>
