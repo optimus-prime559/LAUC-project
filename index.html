@@ -8,167 +8,57 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* ---------- COLOR THEME ---------- */
-:root{
-    --cyan-bg1:#c9f7f5;
-    --cyan-bg2:#e6fffa;
-    --panel-bg:#ffffff;
-    --accent:#fd7e14;
-    --header:#06b6d4;
-}
-
-/* ---------- BODY ---------- */
 body{
     margin:0;
     font-family:Arial, sans-serif;
-    background:linear-gradient(135deg,var(--cyan-bg1),var(--cyan-bg2));
+    background:#f4f8fc;
 }
-
-/* ---------- HEADER ---------- */
 header{
-    background:linear-gradient(90deg,#0891b2,var(--header));
+    background:#0b5ed7;
     color:white;
     text-align:center;
-    padding:18px;
-    font-size:24px;
-    font-weight:bold;
-    box-shadow:0 6px 14px rgba(0,0,0,0.25);
+    padding:15px;
+    font-size:22px;
 }
-
-/* ---------- LAYOUT ---------- */
 .container{
     display:grid;
     grid-template-columns:1fr 1.5fr 1.5fr;
-    gap:16px;
-    padding:16px;
+    gap:10px;
+    padding:10px;
 }
-
-/* ---------- PANELS ---------- */
 .panel{
-    background:rgba(255,255,255,0.35);   /* glass */
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-
-    padding:18px;
-    border-radius:18px;
-
-    border:1px solid rgba(255,255,255,0.4);
-
-    box-shadow:
-        0 12px 30px rgba(0,0,0,0.25),
-        inset 0 1px 1px rgba(255,255,255,0.4);
-}
-
-
-/* ---------- HEADINGS ---------- */
-h3{
-    margin-top:0;
-    padding-bottom:6px;
-    border-bottom:2px solid #e5e7eb;
-}
-
-/* ---------- INPUTS ---------- */
-input, select{
-    width:100%;
-    padding:8px;
-    margin:6px 0;
-    border-radius:8px;
-    border:1px solid #cbd5e1;
-    background:#f8fafc;
-    font-size:14px;
-}
-
-/* ---------- BUTTONS (POP EFFECT) ---------- */
-button{
-    width:100%;
+    background:white;
     padding:12px;
-    margin-top:10px;
-    border:none;
-    border-radius:10px;
-    background:linear-gradient(135deg,#ff9f1c,var(--accent));
+    border-radius:8px;
+}
+input,select,button{
+    width:100%;
+    padding:6px;
+    margin:5px 0;
+}
+button{
+    background:#fd7e14;
     color:white;
-    font-size:15px;
-    font-weight:bold;
+    border:none;
     cursor:pointer;
-
-    /* 3D pop */
-    box-shadow:
-        0 6px 0 #c65a0a,
-        0 12px 20px rgba(0,0,0,0.25);
-
-    transition:all 0.15s ease;
+    font-weight:bold;
 }
-
-/* Hover = lift */
 button:hover{
-    transform:translateY(-3px);
-    box-shadow:
-        0 9px 0 #c65a0a,
-        0 16px 26px rgba(0,0,0,0.3);
+    background:#e36b0a;
 }
-
-/* Click = press */
-button:active{
-    transform:translateY(2px);
-    box-shadow:
-        0 3px 0 #c65a0a,
-        0 6px 10px rgba(0,0,0,0.25);
-}
-
-/* ---------- RESULT BOX ---------- */
-.result{
-    background:rgba(255,255,255,0.45);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    padding:14px;
-    border-radius:14px;
-
-    border-left:5px solid #06b6d4;
-    box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);
-}
-
-/* ---------- CANVAS ---------- */
 canvas{
     background:white;
-    border-radius:10px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.15);
 }
-
-/* ---------- SMALL TEXT ---------- */
 .small{
     font-size:13px;
-    color:#475569;
+    color:#555;
 }
-    canvas{
-    background:rgba(255,255,255,0.55);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-
-    border-radius:16px;
-    padding:6px;
-
-    box-shadow:
-        0 8px 20px rgba(0,0,0,0.2),
-        inset 0 1px 1px rgba(255,255,255,0.5);
-}
-
 </style>
-
 </head>
 
 <body>
 
-<header>
-    <h1>Virtual Lab: Heat Conduction</h1>
-    <nav>
-        <a href="home.html">Home</a>
-        <a href="aim.html">Aim</a>
-        <a href="theory.html">Theory</a>
-        <a href="index.html">Simulation</a>
-    </nav>
-</header>
-
+<header>Fourier’s Law Heat Flow Calculator (Pipe)</header>
 
 <div class="container">
 
@@ -176,146 +66,172 @@ canvas{
 <div class="panel">
 <h3>Input Parameters</h3>
 
-<label>Inner Radius</label>
+Inner Radius:
 <input id="r1" type="number" value="5">
-<select id="r1unit"><option value="0.01">cm</option><option value="1">m</option></select>
+<select id="r1unit">
+<option value="0.01">cm</option>
+<option value="1">m</option>
+</select>
 
-<label>Outer Radius</label>
+Outer Radius:
 <input id="r2" type="number" value="7">
-<select id="r2unit"><option value="0.01">cm</option><option value="1">m</option></select>
+<select id="r2unit">
+<option value="0.01">cm</option>
+<option value="1">m</option>
+</select>
 
-<label>Inner Temperature (°C)</label>
+Inner Temperature (°C):
 <input id="T1" type="number" value="200">
 
-<label>Outer Temperature (°C)</label>
+Outer Temperature (°C):
 <input id="T2" type="number" value="50">
 
-<label>Thermal Conductivity (W/m·K)</label>
+Thermal Conductivity (W/m·K):
 <input id="k" type="number" value="45">
 
-<label>Pipe Length</label>
+Pipe Length:
 <input id="L" type="number" value="1">
-<select id="Lunit"><option value="1">m</option><option value="0.01">cm</option></select>
+<select id="Lunit">
+<option value="1">m</option>
+<option value="0.01">cm</option>
+</select>
 
-<label>Time (seconds)</label>
+Time (seconds):
 <input id="time" type="number" value="60">
 
-<label>Output Unit</label>
+Output Unit:
 <select id="outunit">
 <option value="W">Watt</option>
 <option value="cal">cal/sec</option>
 </select>
 
 <button onclick="calculate()">Calculate</button>
+<button onclick="resetAll()">Reset</button>
 </div>
 
 <!-- DIAGRAM -->
 <div class="panel">
-<h3>Pipe Cross-Section</h3>
-<canvas id="pipeCanvas" width="360" height="360"></canvas>
-<p class="small">Red → hot inner surface, white → cooler outer surface</p>
+<h3>Pipe Cross-Section Diagram</h3>
+<canvas id="pipeCanvas" width="350" height="350"></canvas>
+<p class="small">Non-interactive cross-section (engineering representation)</p>
 </div>
 
 <!-- RESULTS -->
 <div class="panel">
-<h3>Results & Graphs</h3>
-<div id="results" class="result-box"></div>
+<h3>Results</h3>
+<div id="results"></div>
 
+<h4>Temperature vs Radius</h4>
 <canvas id="tempChart"></canvas>
-<br>
+
+<h4>Heat Flow vs Time</h4>
 <canvas id="timeChart"></canvas>
 </div>
 
 </div>
 
+<div class="panel" style="margin:10px;">
+<h3>How to Use</h3>
+<ul>
+<li>Enter pipe dimensions and temperatures</li>
+<li>Choose correct units</li>
+<li>Click <b>Calculate</b></li>
+<li>Diagram and graphs update automatically</li>
+</ul>
+</div>
+
 <script>
 let tempChart, timeChart;
 
-function drawPipeDiagram(r1, r2){
-    const c = document.getElementById("pipeCanvas");
-    const ctx = c.getContext("2d");
-    ctx.clearRect(0,0,c.width,c.height);
+function drawPipeDiagram(r1, r2) {
+    const canvas = document.getElementById("pipeCanvas");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    const cx=c.width/2, cy=c.height/2;
-    const scale = 140/r2;
-    const R2=r2*scale, R1=r1*scale;
+    const cx = canvas.width/2;
+    const cy = canvas.height/2;
+    const scale = 120 / r2;
 
-    // Gradient
-    const grad = ctx.createRadialGradient(cx,cy,R1,cx,cy,R2);
-   grad.addColorStop(0, "#ff5722");   // hot inner surface
-   grad.addColorStop(1, "#ffffff");  // cooler outer surface
+    const R2 = r2 * scale;
+    const R1 = r1 * scale;
 
     ctx.beginPath();
-    ctx.arc(cx,cy,R2,0,2*Math.PI);
-    ctx.fillStyle=grad;
+    ctx.arc(cx, cy, R2, 0, 2*Math.PI);
+    ctx.fillStyle = "#ffccbc";
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(cx,cy,R1,0,2*Math.PI);
-    ctx.fillStyle="#ffffff";
+    ctx.arc(cx, cy, R1, 0, 2*Math.PI);
+    ctx.fillStyle = "#ffffff";
     ctx.fill();
 
-    ctx.strokeStyle="#333";
-    ctx.stroke();
-
-    // Dimension arrows
     ctx.strokeStyle="#000";
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.lineTo(cx+R1,cy);
-    ctx.moveTo(cx,cy);
-    ctx.lineTo(cx+R2,cy);
     ctx.stroke();
 
-    ctx.font="14px Arial";
     ctx.fillStyle="#000";
-    ctx.fillText(`r₁ = ${r1.toFixed(3)} m`, cx+R1/2-20, cy-8);
-    ctx.fillText(`r₂ = ${r2.toFixed(3)} m`, cx+R2/2-20, cy+18);
+    ctx.font="14px Arial";
+    ctx.fillText("Outer Radius = " + r2.toFixed(3) + " m", cx - R2, cy - R2 - 10);
+    ctx.fillText("Inner Radius = " + r1.toFixed(3) + " m", cx - R1, cy + 15);
 }
 
 function calculate(){
-    const r1 = r1v = document.getElementById("r1").value * document.getElementById("r1unit").value;
-    const r2 = r2v = document.getElementById("r2").value * document.getElementById("r2unit").value;
-    const T1 = +document.getElementById("T1").value;
-    const T2 = +document.getElementById("T2").value;
-    const k = +document.getElementById("k").value;
+    const r1 = document.getElementById("r1").value * document.getElementById("r1unit").value;
+    const r2 = document.getElementById("r2").value * document.getElementById("r2unit").value;
+    const T1 = Number(document.getElementById("T1").value);
+    const T2 = Number(document.getElementById("T2").value);
+    const k = Number(document.getElementById("k").value);
     const L = document.getElementById("L").value * document.getElementById("Lunit").value;
-    const time = +document.getElementById("time").value;
+    const time = Number(document.getElementById("time").value);
     const unit = document.getElementById("outunit").value;
 
     const Q = (2*Math.PI*k*L*(T1-T2))/Math.log(r2/r1);
-    const Qout = unit==="cal" ? Q/4.186 : Q;
+
+    let Qout = Q;
+    let unitLabel = "W";
+
+    if(unit==="cal"){
+        Qout = Q/4.186;
+        unitLabel = "cal/sec";
+    }
 
     document.getElementById("results").innerHTML = `
-<b>Heat Flow Rate:</b> ${Qout.toFixed(4)} ${unit==="cal"?"cal/sec":"W"}<br>
+<b>Heat Flow Rate:</b> ${Qout.toFixed(4)} ${unitLabel}<br>
 <b>Total Heat Transferred:</b> ${(Qout*time).toFixed(4)}<br><br>
-<b>Formula:</b> Q = 2πkL(T₁−T₂)/ln(r₂/r₁)
+<b>Formula:</b><br>
+Q = 2πkL(T₁ − T₂) / ln(r₂/r₁)
 `;
 
-    drawPipeDiagram(r1,r2);
+    drawPipeDiagram(r1, r2);
 
-    const r=[],T=[];
+    const rvals=[], tvals=[];
     for(let i=0;i<=20;i++){
-        const rv=r1+(r2-r1)*i/20;
-        r.push(rv.toFixed(4));
-        T.push((T1-(T1-T2)*Math.log(rv/r1)/Math.log(r2/r1)).toFixed(2));
+        const r = r1 + (r2-r1)*i/20;
+        const T = T1 - (T1-T2)*Math.log(r/r1)/Math.log(r2/r1);
+        rvals.push(r.toFixed(4));
+        tvals.push(T.toFixed(2));
     }
 
     if(tempChart) tempChart.destroy();
-    tempChart=new Chart(tempChart?.canvas||document.getElementById("tempChart"),{
-        type:"line",
-        data:{labels:r,datasets:[{label:"Temperature (°C)",data:T,borderWidth:3,borderColor:"#ff5722"}]},
-        options:{scales:{x:{title:{display:true,text:"Radius (m)"}},y:{title:{display:true,text:"Temperature (°C)"}}}}
+    tempChart = new Chart(document.getElementById("tempChart"),{
+        type:'line',
+        data:{labels:rvals,datasets:[{label:'Temperature (°C)',data:tvals}]}
     });
 
-    const t=[],q=[];
-    for(let i=0;i<=10;i++){t.push(i*time/10);q.push(Qout);}
+    const t=[], q=[];
+    for(let i=0;i<=10;i++){
+        t.push((i*time/10).toFixed(1));
+        q.push(Qout);
+    }
+
     if(timeChart) timeChart.destroy();
-    timeChart=new Chart(timeChart?.canvas||document.getElementById("timeChart"),{
-        type:"line",
-        data:{labels:t,datasets:[{label:"Heat Flow",data:q,borderWidth:3,borderColor:"#0b5ed7"}]},
-        options:{scales:{x:{title:{display:true,text:"Time (s)"}},y:{title:{display:true,text:"Heat Flow"}}}}
+    timeChart = new Chart(document.getElementById("timeChart"),{
+        type:'line',
+        data:{labels:t,datasets:[{label:'Heat Flow',data:q}]}
     });
+}
+
+function resetAll(){
+    document.getElementById("results").innerHTML="";
 }
 </script>
 
